@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>City Bus Service</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: "#eef5ff",
+                100: "#d9e9ff",
+                200: "#bdd8ff",
+                300: "#8dbdff",
+                400: "#5a9eff",
+                500: "#2f80ed",
+                600: "#1f66cc",
+                700: "#184fa3",
+                800: "#173f80"
+              }
+            },
+            boxShadow: {
+              card: "0 16px 40px -22px rgba(31, 102, 204, 0.45)"
+            }
+          }
+        }
+      };
+    </script>
+
+    <style>
+      body {
+        font-family: "Manrope", sans-serif;
+      }
+    </style>
+  </head>
+
+  <body class="bg-slate-50 text-slate-800 antialiased">
+    <div class="min-h-screen bg-gradient-to-b from-brand-50 via-white to-slate-50">
+      <header class="fixed left-0 right-0 top-0 z-50 border-b border-brand-100 bg-white shadow-sm will-change-transform">
+        <div class="mx-auto flex h-24 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <a href="#" class="inline-flex shrink-0 items-center">
+            <img src="assets/dcbuslogo.png" alt="Company logo" class="h-14 w-auto sm:h-16" />
+          </a>
+
+          <a
+            href="#r102"
+            class="shrink-0 rounded-xl bg-brand-600 px-5 py-2.5 text-base font-bold text-white transition hover:bg-brand-700 sm:px-6 sm:py-3"
+          >
+            View Routes
+          </a>
+        </div>
+      </header>
+
+      <main class="mx-auto w-full max-w-7xl px-4 pb-12 pt-28 sm:px-6 lg:px-8">
+        <section class="mb-8 rounded-2xl border border-slate-200 bg-white px-6 py-8 text-center sm:px-8 sm:py-10">
+          <h1 class="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
+            DC Bus Route <span class="text-cyan-500">Schedules</span>
+          </h1>
+
+          <div class="mx-auto mt-5 max-w-5xl rounded-xl border border-cyan-300 bg-cyan-50/50 p-3 text-left text-[13px] leading-relaxed text-slate-800 sm:p-4 sm:text-sm">
+            <div class="flex items-start gap-3">
+              <span class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center text-slate-700" aria-hidden="true">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="9" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8h.01M11 12h2v4h-2" />
+                </svg>
+              </span>
+              <div>
+                <p class="font-bold">Important Notice</p>
+                <p>
+                  DC Bus Interim Service Schedule. Operating hours:
+                  <span class="font-semibold">AM Route (6:00 AM - 10:00 AM)</span>
+                  and
+                  <span class="font-semibold">PM Route (4:00 PM - 9:00 PM)</span>.
+                  Valid until further notice.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="r102" class="mx-auto max-w-4xl scroll-mt-28">
+          <article class="rounded-3xl border border-brand-100 bg-white p-5 shadow-card sm:p-7">
+            <div class="rounded-2xl border border-brand-100 bg-gradient-to-r from-brand-50 via-cyan-50 to-white p-5 sm:p-6">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="inline-flex items-center gap-3">
+                  <span class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-brand-700 shadow-sm">
+                    <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <rect x="4" y="6" width="16" height="11" rx="2" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M8 17v2m8-2v2M4 11h16" />
+                      <circle cx="8" cy="15" r="1" fill="currentColor" />
+                      <circle cx="16" cy="15" r="1" fill="currentColor" />
+                    </svg>
+                  </span>
+                  <div>
+                    <p class="text-xs font-bold uppercase tracking-wide text-brand-700">Bus Route</p>
+                    <h2 class="text-2xl font-extrabold text-slate-900 sm:text-3xl">R102</h2>
+                  </div>
+                </div>
+
+                <span class="rounded-full bg-emerald-100 px-4 py-1.5 text-xs font-bold text-emerald-700">On Time</span>
+              </div>
+
+              <p class="mt-3 text-sm font-semibold text-slate-700">Central Terminal to Airport Hub</p>
+            </div>
+
+            <div class="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+              <div class="grid gap-4 sm:grid-cols-3">
+                <div class="rounded-xl bg-white p-3">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">From</p>
+                  <p class="mt-1 text-sm font-bold text-slate-800">Central Terminal</p>
+                </div>
+                <div class="rounded-xl bg-white p-3">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">To</p>
+                  <p class="mt-1 text-sm font-bold text-slate-800">Airport Hub</p>
+                </div>
+                <div class="rounded-xl bg-white p-3">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Travel Time</p>
+                  <p class="mt-1 text-sm font-bold text-slate-800">45 Minutes</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-5 grid gap-3 sm:grid-cols-3">
+              <div class="rounded-xl border border-brand-100 bg-brand-50 p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-brand-700">Next Departure</p>
+                <p class="mt-1 text-lg font-extrabold text-brand-800">07:30 AM</p>
+              </div>
+              <div class="rounded-xl border border-brand-100 bg-brand-50 p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-brand-700">Seats</p>
+                <p class="mt-1 text-lg font-extrabold text-brand-800">16 Available</p>
+              </div>
+              <div class="rounded-xl border border-brand-100 bg-brand-50 p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-brand-700">Fare</p>
+                <p class="mt-1 text-lg font-extrabold text-brand-800">$2.80</p>
+              </div>
+            </div>
+
+            <div class="mt-6 grid gap-3 sm:grid-cols-2">
+              <button
+                id="bookBtn"
+                type="button"
+                class="rounded-xl bg-brand-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-brand-700"
+              >
+                Book R102
+              </button>
+              <button
+                id="scheduleBtn"
+                type="button"
+                class="rounded-xl border border-brand-200 bg-white px-5 py-3 text-sm font-bold text-brand-700 transition hover:border-brand-300"
+              >
+                View Full Schedule
+              </button>
+            </div>
+
+            <p id="cardMessage" class="mt-4 hidden rounded-xl border border-brand-100 bg-brand-50 px-4 py-3 text-sm font-semibold text-brand-700"></p>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const bookBtn = document.getElementById("bookBtn");
+      const scheduleBtn = document.getElementById("scheduleBtn");
+      const cardMessage = document.getElementById("cardMessage");
+
+      const showCardMessage = (text) => {
+        cardMessage.textContent = text;
+        cardMessage.classList.remove("hidden");
+      };
+
+      bookBtn.addEventListener("click", () => {
+        showCardMessage("R102 booking is ready. Please proceed to ticket payment.");
+      });
+
+      scheduleBtn.addEventListener("click", () => {
+        showCardMessage("Full R102 schedule loaded: 07:30 AM, 08:15 AM, 09:00 AM, 09:45 AM.");
+      });
+    </script>
+  </body>
+</html>
