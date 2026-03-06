@@ -11,6 +11,12 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -41,6 +47,47 @@
     <style>
       body {
         font-family: "Manrope", sans-serif;
+      }
+
+      .r102-waypoint-pin {
+        display: flex;
+        height: 24px;
+        width: 24px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 9999px;
+        border: 2px solid #ffffff;
+        background-color: #9333ea;
+        color: #ffffff;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
+      }
+
+      .r102-bus-start-icon {
+        display: flex;
+        height: 28px;
+        width: 28px;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        line-height: 1;
+        filter: drop-shadow(0 2px 4px rgba(15, 23, 42, 0.35));
+      }
+
+      #routeLiveMap {
+        background: linear-gradient(180deg, #e0f2fe 0%, #fdf2f8 100%);
+      }
+
+      #routeLiveMap .leaflet-tile {
+        filter: saturate(1.14) contrast(1.03);
+      }
+
+      #routeLiveMap .leaflet-tooltip {
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 8px 20px -12px rgba(15, 23, 42, 0.4);
       }
     </style>
   </head>
@@ -91,7 +138,7 @@
         </section>
 
         <section id="r102" class="mx-auto max-w-5xl scroll-mt-28">
-          <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-lg sm:p-7">
+          <article data-route="R102" class="rounded-3xl border border-slate-200 bg-white p-5 shadow-lg sm:p-7">
             <div class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-purple-600 p-4">
               <div class="inline-flex items-center gap-3">
                 <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/90 px-2 text-xs font-extrabold text-purple-600">
@@ -187,7 +234,7 @@
             </div>
           </article>
 
-          <article class="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-lg sm:p-7">
+          <article data-route="R103" class="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-lg sm:p-7">
             <div class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-orange-500 p-4">
               <div class="inline-flex items-center gap-3">
                 <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/90 px-2 text-xs font-extrabold text-orange-500">
@@ -283,7 +330,7 @@
             </div>
           </article>
 
-          <article class="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-lg sm:p-7">
+          <article data-route="R402" class="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-lg sm:p-7">
             <div class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-blue-600 p-4">
               <div class="inline-flex items-center gap-3">
                 <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/90 px-2 text-xs font-extrabold text-blue-600">
@@ -379,7 +426,7 @@
             </div>
           </article>
 
-          <article class="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-lg sm:p-7">
+          <article data-route="R403" class="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-lg sm:p-7">
             <div class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-green-600 p-4">
               <div class="inline-flex items-center gap-3">
                 <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/90 px-2 text-xs font-extrabold text-green-600">
@@ -475,7 +522,7 @@
             </div>
           </article>
 
-          <article class="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-lg sm:p-7">
+          <article data-route="R503" class="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-lg sm:p-7">
             <div class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-yellow-500 p-4">
               <div class="inline-flex items-center gap-3">
                 <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/90 px-2 text-xs font-extrabold text-yellow-600">
@@ -571,7 +618,7 @@
             </div>
           </article>
 
-          <article class="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-lg sm:p-7">
+          <article data-route="R603" class="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-lg sm:p-7">
             <div class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-pink-600 p-4">
               <div class="inline-flex items-center gap-3">
                 <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/90 px-2 text-xs font-extrabold text-pink-600">
@@ -667,7 +714,7 @@
             </div>
           </article>
 
-          <article class="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-lg sm:p-7">
+          <article data-route="R763" class="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-lg sm:p-7">
             <div class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-green-600 p-4">
               <div class="inline-flex items-center gap-3">
                 <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/90 px-2 text-xs font-extrabold text-green-600">
@@ -763,7 +810,7 @@
             </div>
           </article>
 
-          <article class="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-lg sm:p-7">
+          <article data-route="R783" class="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-lg sm:p-7">
             <div class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-orange-600 p-4">
               <div class="inline-flex items-center gap-3">
                 <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/90 px-2 text-xs font-extrabold text-orange-600">
@@ -859,7 +906,7 @@
             </div>
           </article>
 
-          <article class="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-lg sm:p-7">
+          <article data-route="R793" class="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-lg sm:p-7">
             <div class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-blue-600 p-4">
               <div class="inline-flex items-center gap-3">
                 <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/90 px-2 text-xs font-extrabold text-blue-600">
@@ -994,8 +1041,661 @@
       </main>
     </div>
 
+    <!-- Modal -->
+    <div id="routeModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div class="relative w-full max-h-screen max-w-2xl overflow-y-auto rounded-3xl bg-white shadow-2xl">
+        <!-- Close Button -->
+        <button id="closeModal" class="absolute right-4 top-4 z-10 rounded-full bg-white p-2 shadow-md hover:bg-slate-100">
+          <svg class="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <!-- Route Header -->
+        <div id="modalHeader" class="p-6 sm:p-8 pb-3">
+          <div id="modalRouteName" class="text-2xl font-bold text-slate-900"></div>
+        </div>
+
+        <!-- Status and Passenger Load -->
+        <div class="px-6 sm:px-8 py-3 border-b border-slate-200">
+          <div class="flex items-center justify-between">
+            <p class="text-sm text-slate-600"><span class="font-bold">Status:</span> <span id="modalStatus" class="text-slate-900">On-Route</span></p>
+            <p class="text-sm text-slate-600"><span class="font-bold">Passenger Load:</span> <span id="modalPassengerLoadValue" class="text-slate-900">Available</span></p>
+          </div>
+        </div>
+
+        <!-- Map Placeholder -->
+        <div class="px-6 sm:px-8 py-4">
+          <div id="routeLiveMap" class="h-72 w-full overflow-hidden rounded-2xl border-2 border-slate-200"></div>
+        </div>
+
+        <!-- R102 Detailed Route Toggle -->
+        <div id="r102RouteToggleSection" class="hidden px-6 sm:px-8 pb-4">
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div class="mb-3 inline-flex rounded-xl border border-slate-300 bg-white p-1">
+              <button
+                id="r102AmToggle"
+                class="rounded-lg px-4 py-1.5 text-sm font-semibold text-slate-700 transition"
+                type="button"
+              >
+                AM
+              </button>
+              <button
+                id="r102PmToggle"
+                class="rounded-lg px-4 py-1.5 text-sm font-semibold text-slate-700 transition"
+                type="button"
+              >
+                PM
+              </button>
+            </div>
+            <p id="r102RouteTitle" class="mb-2 text-sm font-bold text-slate-800"></p>
+            <ol id="r102RouteStops" class="list-decimal space-y-1 pl-5 text-sm text-slate-700"></ol>
+          </div>
+        </div>
+
+        <!-- Route Details -->
+        <div class="grid gap-4 px-6 sm:px-8 py-4 md:grid-cols-2">
+          <!-- AM Schedule -->
+          <div class="rounded-2xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4">
+            <div class="mb-3 flex items-center gap-2">
+              <svg class="h-4 w-4 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="12" cy="12" r="5" />
+                <path d="M12 1v6m0 6v6M5.6 5.6l4.2 4.2m4.4 4.4l4.2 4.2M1 12h6m6 0h6M5.6 18.4l4.2-4.2m4.4-4.4l4.2-4.2" />
+              </svg>
+              <p class="font-bold text-slate-700">AM Schedule</p>
+            </div>
+            <div id="modalAMSchedule" class="space-y-2 text-sm text-slate-600"></div>
+          </div>
+
+          <!-- PM Schedule -->
+          <div class="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4">
+            <div class="mb-3 flex items-center gap-2">
+              <svg class="h-4 w-4 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+              <p class="font-bold text-slate-700">PM Schedule</p>
+            </div>
+            <div id="modalPMSchedule" class="space-y-2 text-sm text-slate-600"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
     <script>
-      // Page is ready for R102 route display
+      const routeModal = document.getElementById('routeModal');
+      const closeModalBtn = document.getElementById('closeModal');
+      const r102RouteToggleSection = document.getElementById('r102RouteToggleSection');
+      const r102AmToggle = document.getElementById('r102AmToggle');
+      const r102PmToggle = document.getElementById('r102PmToggle');
+      const r102RouteTitle = document.getElementById('r102RouteTitle');
+      const r102RouteStops = document.getElementById('r102RouteStops');
+      let liveMap;
+      let liveRouteLayer;
+      let liveMarkerLayer;
+      let activeRouteId = null;
+      let activeRouteData = null;
+      let activeR102Period = 'AM';
+
+      const davaoCityCenter = [7.0731, 125.6128];
+      const locationCoordinates = {
+        'Toril': [7.0215, 125.5036],
+        'GE Torres': [7.0489, 125.5904],
+        'Ecoland Terminal': [7.0644, 125.6028],
+        'Red Cross Roxas': [7.0747, 125.6119],
+        'Davao Light (C. Bangoy St.)': [7.0741, 125.6133],
+        'Mintal Palengke': [7.0862, 125.4622],
+        'Hope Ave. Bangkal': [7.0486, 125.5828],
+        'Citymall Northtown': [7.1119, 125.6207],
+        'Citygate Buhangin': [7.1038, 125.6296],
+        'Panacan Depot': [7.1859, 125.6621],
+        'NCCC Panacan': [7.1773, 125.6658]
+      };
+
+      const r102StopCoordinates = {
+        'Toril District Hall': [7.0152, 125.4968],
+        'Toril Proper': [7.0223, 125.5047],
+        'Sirawan': [7.0320, 125.5180],
+        'Daliao': [7.0410, 125.5350],
+        'Bago Aplaya': [7.0495, 125.5565],
+        'Sasa': [7.1080, 125.6390],
+        'Panacan Church': [7.1692, 125.6608],
+        'Panacan Market': [7.1737, 125.6660],
+        'Bangoy Junction': [7.1368, 125.6474],
+        'Roxas Avenue': [7.0749, 125.6128],
+        'Rizal Street': [7.0710, 125.6112],
+        'CM Recto': [7.0675, 125.6079],
+        'Uyanguren': [7.0728, 125.6202],
+        'Bolton Cor Quirino': [7.0661, 125.6073],
+        'Ponciano': [7.0772, 125.6119],
+        'Monteverde': [7.0797, 125.6106],
+        'GE Torres (Sandawa)': [7.0489, 125.5904]
+      };
+
+      function initializeLiveMap() {
+        if (liveMap || typeof L === 'undefined') {
+          return;
+        }
+
+        liveMap = L.map('routeLiveMap', {
+          zoomControl: true
+        }).setView(davaoCityCenter, 12);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+          subdomains: 'abcd',
+          maxZoom: 19,
+          attribution: '&copy; CARTO, &copy; OpenStreetMap contributors'
+        }).addTo(liveMap);
+      }
+
+      function clearLiveRouteLayers() {
+        if (!liveMap) {
+          return;
+        }
+
+        if (liveRouteLayer) {
+          liveMap.removeLayer(liveRouteLayer);
+          liveRouteLayer = null;
+        }
+
+        if (liveMarkerLayer) {
+          liveMap.removeLayer(liveMarkerLayer);
+          liveMarkerLayer = null;
+        }
+      }
+
+      function updateRouteMap(routeId, routeInfo, period) {
+        initializeLiveMap();
+
+        if (!liveMap) {
+          return;
+        }
+
+        clearLiveRouteLayers();
+
+        const markers = L.layerGroup();
+        let pathPoints = [];
+        let startLabel = routeInfo.amStart;
+        let endLabel = routeInfo.amEnd;
+        let selectedStops = [];
+
+        const routeTheme = {
+          R102: {
+            lineColor: '#9333ea',
+            waypointColor: '#a855f7',
+            midPointColor: '#c084fc',
+            startStroke: '#166534',
+            startFill: '#22c55e',
+            endStroke: '#991b1b',
+            endFill: '#ef4444'
+          },
+          R103: {
+            lineColor: '#f59e0b',
+            waypointColor: '#fbbf24',
+            midPointColor: '#fcd34d',
+            startStroke: '#166534',
+            startFill: '#22c55e',
+            endStroke: '#991b1b',
+            endFill: '#ef4444'
+          },
+          R402: {
+            lineColor: '#2563eb',
+            waypointColor: '#60a5fa',
+            midPointColor: '#93c5fd',
+            startStroke: '#166534',
+            startFill: '#22c55e',
+            endStroke: '#991b1b',
+            endFill: '#ef4444'
+          },
+          R403: {
+            lineColor: '#16a34a',
+            waypointColor: '#4ade80',
+            midPointColor: '#86efac',
+            startStroke: '#166534',
+            startFill: '#22c55e',
+            endStroke: '#991b1b',
+            endFill: '#ef4444'
+          },
+          R503: {
+            lineColor: '#eab308',
+            waypointColor: '#facc15',
+            midPointColor: '#fde047',
+            startStroke: '#166534',
+            startFill: '#22c55e',
+            endStroke: '#991b1b',
+            endFill: '#ef4444'
+          },
+          R603: {
+            lineColor: '#db2777',
+            waypointColor: '#f472b6',
+            midPointColor: '#f9a8d4',
+            startStroke: '#166534',
+            startFill: '#22c55e',
+            endStroke: '#991b1b',
+            endFill: '#ef4444'
+          },
+          R763: {
+            lineColor: '#15803d',
+            waypointColor: '#4ade80',
+            midPointColor: '#86efac',
+            startStroke: '#166534',
+            startFill: '#22c55e',
+            endStroke: '#991b1b',
+            endFill: '#ef4444'
+          },
+          R783: {
+            lineColor: '#ea580c',
+            waypointColor: '#fb923c',
+            midPointColor: '#fdba74',
+            startStroke: '#166534',
+            startFill: '#22c55e',
+            endStroke: '#991b1b',
+            endFill: '#ef4444'
+          },
+          R793: {
+            lineColor: '#1d4ed8',
+            waypointColor: '#60a5fa',
+            midPointColor: '#93c5fd',
+            startStroke: '#166534',
+            startFill: '#22c55e',
+            endStroke: '#991b1b',
+            endFill: '#ef4444'
+          },
+          default: {
+            lineColor: '#7c3aed',
+            waypointColor: '#a78bfa',
+            midPointColor: '#c4b5fd',
+            startStroke: '#166534',
+            startFill: '#22c55e',
+            endStroke: '#991b1b',
+            endFill: '#ef4444'
+          }
+        }[routeId] || {
+          lineColor: '#7c3aed',
+          waypointColor: '#a78bfa',
+          midPointColor: '#c4b5fd',
+          startStroke: '#166534',
+          startFill: '#22c55e',
+          endStroke: '#991b1b',
+          endFill: '#ef4444'
+        };
+
+        if (routeId === 'R102') {
+          selectedStops = period === 'PM' ? r102DetailedRoutes.PM.stops : r102DetailedRoutes.AM.stops;
+          pathPoints = selectedStops
+            .map((stop) => r102StopCoordinates[stop])
+            .filter((point) => Array.isArray(point));
+          startLabel = selectedStops[0];
+          endLabel = selectedStops[selectedStops.length - 1];
+        } else {
+          const startPoint = locationCoordinates[routeInfo.amStart] || null;
+          const endPoint = locationCoordinates[routeInfo.amEnd] || null;
+
+          if (startPoint && endPoint) {
+            pathPoints = [startPoint, endPoint];
+          } else if (startPoint) {
+            pathPoints = [startPoint];
+          } else if (endPoint) {
+            pathPoints = [endPoint];
+          } else {
+            pathPoints = [davaoCityCenter];
+            startLabel = 'Davao City';
+            endLabel = 'Davao City';
+          }
+        }
+
+        const shouldRenderR102Waypoints = routeId === 'R102' && selectedStops.length > 0;
+
+        if (pathPoints.length > 1) {
+          liveRouteLayer = L.polyline(pathPoints, {
+            color: routeTheme.lineColor,
+            weight: 4,
+            opacity: 0.95
+          }).addTo(liveMap);
+
+          if (shouldRenderR102Waypoints) {
+            selectedStops.forEach((stop, index) => {
+              const point = r102StopCoordinates[stop];
+              if (!Array.isArray(point)) {
+                return;
+              }
+
+              const waypointHtml = `<div class="r102-waypoint-pin" style="background-color: ${routeTheme.waypointColor};">${index + 1}</div>`;
+
+              const waypointIcon = L.divIcon({
+                className: '',
+                html: waypointHtml,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+              });
+
+              L.marker(point, { icon: waypointIcon, title: stop })
+                .addTo(markers)
+                .bindTooltip(`${index + 1}. ${stop}`, {
+                  direction: 'top',
+                  offset: [0, -10],
+                  opacity: 0.95
+                });
+            });
+
+            const startPoint = r102StopCoordinates[selectedStops[0]];
+            if (Array.isArray(startPoint)) {
+              const busStartIcon = L.divIcon({
+                className: '',
+                html: '<div class="r102-bus-start-icon" aria-hidden="true">🚌</div>',
+                iconSize: [28, 28],
+                iconAnchor: [14, 34]
+              });
+
+              L.marker(startPoint, {
+                icon: busStartIcon,
+                title: `Bus Start: ${selectedStops[0]}`,
+                zIndexOffset: 1200
+              })
+                .addTo(markers)
+                .bindTooltip(`Bus Start: ${selectedStops[0]}`, {
+                  direction: 'top',
+                  offset: [0, -20],
+                  opacity: 0.95
+                });
+            }
+          } else if (routeId === 'R102' && pathPoints.length > 3) {
+            pathPoints.slice(1, -1).forEach((point) => {
+              L.circleMarker(point, {
+                radius: 4,
+                color: '#ffffff',
+                weight: 1,
+                fillColor: routeTheme.midPointColor,
+                fillOpacity: 1
+              }).addTo(markers);
+            });
+          }
+
+          if (!shouldRenderR102Waypoints) {
+            L.circleMarker(pathPoints[0], {
+              radius: 8,
+              color: routeTheme.startStroke,
+              weight: 2,
+              fillColor: routeTheme.startFill,
+              fillOpacity: 1
+            }).addTo(markers).bindTooltip(`Start: ${startLabel}`);
+
+            L.circleMarker(pathPoints[pathPoints.length - 1], {
+              radius: 8,
+              color: routeTheme.endStroke,
+              weight: 2,
+              fillColor: routeTheme.endFill,
+              fillOpacity: 1
+            }).addTo(markers).bindTooltip(`End: ${endLabel}`);
+          }
+
+          liveMap.fitBounds(L.latLngBounds(pathPoints), {
+            padding: [24, 24],
+            maxZoom: 13
+          });
+        } else if (pathPoints.length === 1) {
+          L.circleMarker(pathPoints[0], {
+            radius: 8,
+            color: routeTheme.lineColor,
+            weight: 2,
+            fillColor: routeTheme.waypointColor,
+            fillOpacity: 1
+          }).addTo(markers).bindTooltip(startLabel);
+
+          liveMap.setView(pathPoints[0], 12);
+        } else {
+          liveMap.setView(davaoCityCenter, 12);
+        }
+
+        liveMarkerLayer = markers.addTo(liveMap);
+
+        setTimeout(() => {
+          liveMap.invalidateSize();
+        }, 0);
+      }
+
+      const r102DetailedRoutes = {
+        AM: {
+          title: 'AM Route (6:00 AM - 10:00 AM)',
+          stops: [
+            'Toril District Hall',
+            'Toril Proper',
+            'Sirawan',
+            'Daliao',
+            'Bago Aplaya',
+            'Sasa',
+            'Panacan Church',
+            'Panacan Market',
+            'Bangoy Junction',
+            'Roxas Avenue',
+            'Rizal Street',
+            'CM Recto',
+            'Uyanguren',
+            'Bolton Cor Quirino',
+            'Ponciano',
+            'Monteverde',
+            'GE Torres (Sandawa)'
+          ]
+        },
+        PM: {
+          title: 'PM Route (4:00 PM - 9:00 PM)',
+          stops: [
+            'GE Torres (Sandawa)',
+            'Monteverde',
+            'Ponciano',
+            'Bolton Cor Quirino',
+            'Uyanguren',
+            'CM Recto',
+            'Rizal Street',
+            'Roxas Avenue',
+            'Bangoy Junction',
+            'Panacan Market',
+            'Panacan Church',
+            'Sasa',
+            'Bago Aplaya',
+            'Daliao',
+            'Sirawan',
+            'Toril Proper',
+            'Toril District Hall'
+          ]
+        }
+      };
+
+      function setR102ToggleState(period) {
+        const amActiveClasses = ['bg-amber-500', 'text-white', 'shadow-sm'];
+        const pmActiveClasses = ['bg-blue-600', 'text-white', 'shadow-sm'];
+
+        r102AmToggle.classList.remove(...amActiveClasses);
+        r102PmToggle.classList.remove(...pmActiveClasses);
+
+        if (period === 'AM') {
+          r102AmToggle.classList.add(...amActiveClasses);
+        } else {
+          r102PmToggle.classList.add(...pmActiveClasses);
+        }
+      }
+
+      function renderR102DetailedRoute(period) {
+        activeR102Period = period;
+        const route = r102DetailedRoutes[period];
+        r102RouteTitle.textContent = route.title;
+        r102RouteStops.innerHTML = route.stops
+          .map((stop) => `<li>${stop}</li>`)
+          .join('');
+        setR102ToggleState(period);
+      }
+
+      r102AmToggle.addEventListener('click', () => {
+        renderR102DetailedRoute('AM');
+        if (activeRouteId === 'R102' && activeRouteData) {
+          updateRouteMap('R102', activeRouteData, 'AM');
+        }
+      });
+
+      r102PmToggle.addEventListener('click', () => {
+        renderR102DetailedRoute('PM');
+        if (activeRouteId === 'R102' && activeRouteData) {
+          updateRouteMap('R102', activeRouteData, 'PM');
+        }
+      });
+      
+      // Route data
+      const routeData = {
+        'R102': {
+          name: 'R102 - Toril - GE Torres',
+          status: 'Available',
+          badge: 'bg-purple-600',
+          amTime: '6:00 AM - 10:00 AM',
+          pmTime: '4:00 PM - 9:00 PM',
+          amStart: 'Toril',
+          amEnd: 'GE Torres',
+          pmStart: 'Ecoland Terminal',
+          pmEnd: 'Toril'
+        },
+        'R103': {
+          name: 'R103 - Toril - Roxas',
+          status: 'Available',
+          badge: 'bg-orange-500',
+          amTime: '6:00 AM - 10:00 AM',
+          pmTime: '4:00 PM - 9:00 PM',
+          amStart: 'Toril',
+          amEnd: 'Red Cross Roxas',
+          pmStart: 'Davao Light (C. Bangoy St.)',
+          pmEnd: 'Toril'
+        },
+        'R402': {
+          name: 'R402 - Mintal - GE Torres',
+          status: 'Standing',
+          badge: 'bg-blue-600',
+          amTime: '6:00 AM - 10:00 AM',
+          pmTime: '4:00 PM - 9:00 PM',
+          amStart: 'Mintal Palengke',
+          amEnd: 'GE Torres',
+          pmStart: 'Ecoland Terminal',
+          pmEnd: 'Mintal Palengke'
+        },
+        'R403': {
+          name: 'R403 - Mintal - Roxas',
+          status: 'Full',
+          badge: 'bg-green-600',
+          amTime: '6:00 AM - 10:00 AM',
+          pmTime: '4:00 PM - 9:00 PM',
+          amStart: 'Mintal Palengke',
+          amEnd: 'Davao Light (C. Bangoy St.)',
+          pmStart: 'Davao Light (C. Bangoy St.)',
+          pmEnd: 'Mintal Palengke'
+        },
+        'R503': {
+          name: 'R503 - Bangkal - Roxas',
+          status: 'Available',
+          badge: 'bg-yellow-500',
+          amTime: '6:00 AM - 10:00 AM',
+          pmTime: '4:00 PM - 9:00 PM',
+          amStart: 'Hope Ave. Bangkal',
+          amEnd: 'Davao Light (C. Bangoy St.)',
+          pmStart: 'Davao Light (C. Bangoy St.)',
+          pmEnd: 'Hope Ave. Bangkal'
+        },
+        'R603': {
+          name: 'R603 - Buhangin - Roxas',
+          status: 'Standing',
+          badge: 'bg-pink-600',
+          amTime: '6:00 AM - 10:00 AM',
+          pmTime: '4:00 PM - 9:00 PM',
+          amStart: 'Citymall Northtown',
+          amEnd: 'Red Cross Roxas',
+          pmStart: 'Red Cross Roxas',
+          pmEnd: 'Citygate Buhangin'
+        },
+        'R763': {
+          name: 'R763 - Panacan (via Buhangin)',
+          status: 'Available',
+          badge: 'bg-green-600',
+          amTime: '6:00 AM - 10:00 AM',
+          pmTime: '4:00 PM - 9:00 PM',
+          amStart: 'Panacan Depot',
+          amEnd: 'Red Cross Roxas',
+          pmStart: 'Red Cross Roxas',
+          pmEnd: 'Panacan Depot'
+        },
+        'R783': {
+          name: 'R783 - Panacan (via Angliongto)',
+          status: 'Standing',
+          badge: 'bg-orange-600',
+          amTime: '6:00 AM - 10:00 AM',
+          pmTime: '4:00 PM - 9:00 PM',
+          amStart: 'Panacan Depot',
+          amEnd: 'Red Cross Roxas',
+          pmStart: 'Red Cross Roxas',
+          pmEnd: 'Panacan Depot'
+        },
+        'R793': {
+          name: 'R793 - Panacan (via R Castillo)',
+          status: 'Available',
+          badge: 'bg-blue-600',
+          amTime: '6:00 AM - 10:00 AM',
+          pmTime: '4:00 PM - 9:00 PM',
+          amStart: 'NCCC Panacan',
+          amEnd: 'Red Cross Roxas',
+          pmStart: 'Red Cross Roxas',
+          pmEnd: 'NCCC Panacan'
+        }
+      };
+
+      // Open modal on article click
+      document.querySelectorAll('article[data-route]').forEach(article => {
+        article.classList.add('cursor-pointer', 'hover:shadow-xl', 'transition-shadow');
+        article.addEventListener('click', function() {
+          const routeId = this.dataset.route;
+          const data = routeData[routeId];
+          
+          if (data) {
+            activeRouteId = routeId;
+            activeRouteData = data;
+            document.getElementById('modalRouteName').textContent = data.name;
+            document.getElementById('modalStatus').textContent = 'On-Route';
+            document.getElementById('modalPassengerLoadValue').textContent = data.status;
+
+            if (routeId === 'R102') {
+              r102RouteToggleSection.classList.remove('hidden');
+              renderR102DetailedRoute('AM');
+            } else {
+              r102RouteToggleSection.classList.add('hidden');
+            }
+            
+            document.getElementById('modalAMSchedule').innerHTML = `
+              <p><span class="font-semibold">Time:</span> ${data.amTime}</p>
+              <p><span class="font-semibold">Start:</span> ${data.amStart}</p>
+              <p><span class="font-semibold">End:</span> ${data.amEnd}</p>
+            `;
+            
+            document.getElementById('modalPMSchedule').innerHTML = `
+              <p><span class="font-semibold">Time:</span> ${data.pmTime}</p>
+              <p><span class="font-semibold">Start:</span> ${data.pmStart}</p>
+              <p><span class="font-semibold">End:</span> ${data.pmEnd}</p>
+            `;
+            
+            routeModal.classList.remove('hidden');
+            updateRouteMap(routeId, data, activeR102Period);
+          }
+        });
+      });
+
+      // Close modal
+      closeModalBtn.addEventListener('click', () => {
+        routeModal.classList.add('hidden');
+      });
+
+      // Close on outside click
+      routeModal.addEventListener('click', (e) => {
+        if (e.target === routeModal) {
+          routeModal.classList.add('hidden');
+        }
+      });
     </script>
   </body>
 </html>
