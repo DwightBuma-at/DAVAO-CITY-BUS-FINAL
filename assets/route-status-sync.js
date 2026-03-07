@@ -1,24 +1,62 @@
 (function () {
   const ROUTES = [
-    { id: 'R102', name: 'R102 - Toril - GE Torres', color: '#7e22ce', soft: '#f3e8ff', border: '#d8b4fe' },
-    { id: 'R103', name: 'R103 - Toril - Roxas', color: '#f97316', soft: '#ffedd5', border: '#fdba74' },
-    { id: 'R402', name: 'R402 - Mintal - GE Torres', color: '#2563eb', soft: '#dbeafe', border: '#93c5fd' },
-    { id: 'R403', name: 'R403 - Mintal - Roxas', color: '#16a34a', soft: '#dcfce7', border: '#86efac' },
-    { id: 'R503', name: 'R503 - Bangkal - Roxas', color: '#ca8a04', soft: '#fef9c3', border: '#fde047' },
-    { id: 'R603', name: 'R603 - Buhangin - Roxas', color: '#db2777', soft: '#fce7f3', border: '#f9a8d4' },
-    { id: 'R763', name: 'R763 - Panacan (via Buhangin)', color: '#16a34a', soft: '#dcfce7', border: '#86efac' },
-    { id: 'R783', name: 'R783 - Panacan (via Angliongto)', color: '#ea580c', soft: '#ffedd5', border: '#fdba74' },
-    { id: 'R793', name: 'R793 - Panacan (via R Castillo)', color: '#2563eb', soft: '#dbeafe', border: '#93c5fd' }
+    { id: 'R102', name: 'R102 - Toril - GE Torres', color: '#7e22ce', soft: '#f3e8ff', border: '#d8b4fe', defaultLoad: 'Available' },
+    { id: 'R103', name: 'R103 - Toril - Roxas', color: '#f97316', soft: '#ffedd5', border: '#fdba74', defaultLoad: 'Available' },
+    { id: 'R402', name: 'R402 - Mintal - GE Torres', color: '#2563eb', soft: '#dbeafe', border: '#93c5fd', defaultLoad: 'Standing' },
+    { id: 'R403', name: 'R403 - Mintal - Roxas', color: '#16a34a', soft: '#dcfce7', border: '#86efac', defaultLoad: 'Full' },
+    { id: 'R503', name: 'R503 - Bangkal - Roxas', color: '#ca8a04', soft: '#fef9c3', border: '#fde047', defaultLoad: 'Available' },
+    { id: 'R603', name: 'R603 - Buhangin - Roxas', color: '#db2777', soft: '#fce7f3', border: '#f9a8d4', defaultLoad: 'Standing' },
+    { id: 'R763', name: 'R763 - Panacan (via Buhangin)', color: '#16a34a', soft: '#dcfce7', border: '#86efac', defaultLoad: 'Available' },
+    { id: 'R783', name: 'R783 - Panacan (via Angliongto)', color: '#ea580c', soft: '#ffedd5', border: '#fdba74', defaultLoad: 'Standing' },
+    { id: 'R793', name: 'R793 - Panacan (via R Castillo)', color: '#2563eb', soft: '#dbeafe', border: '#93c5fd', defaultLoad: 'Available' }
   ];
 
+  const PASSENGER_LOAD_VALUES = ['Available', 'Standing', 'Full'];
+  const ROUTE_PERIODS = ['AM', 'PM'];
+
   const STORAGE_KEY = 'dc-bus-route-status-v1';
+
+  function normalizeActivePeriod(value, fallback) {
+    if (typeof value === 'string' && ROUTE_PERIODS.includes(value)) {
+      return value;
+    }
+
+    if (typeof fallback === 'string' && ROUTE_PERIODS.includes(fallback)) {
+      return fallback;
+    }
+
+    return null;
+  }
+
+  function normalizePassengerLoad(value, fallback) {
+    if (typeof value === 'string' && PASSENGER_LOAD_VALUES.includes(value)) {
+      return value;
+    }
+
+    if (typeof fallback === 'string' && PASSENGER_LOAD_VALUES.includes(fallback)) {
+      return fallback;
+    }
+
+    return PASSENGER_LOAD_VALUES[0];
+  }
+
+  function getRouteMeta(routeId) {
+    return ROUTES.find((route) => route.id === routeId) || null;
+  }
+
+  function getRouteDefaultLoad(routeId) {
+    const routeMeta = getRouteMeta(routeId);
+    return normalizePassengerLoad(routeMeta && routeMeta.defaultLoad, PASSENGER_LOAD_VALUES[0]);
+  }
 
   function createDefaultState() {
     return ROUTES.reduce((state, route) => {
       state[route.id] = {
         onRoute: false,
+        activePeriod: null,
         lastUpdated: null,
-        coords: null
+        coords: null,
+        passengerLoad: normalizePassengerLoad(route.defaultLoad, PASSENGER_LOAD_VALUES[0])
       };
       return state;
     }, {});
@@ -50,11 +88,17 @@
 
     ROUTES.forEach((route) => {
       const nextState = rawState[route.id];
+      const defaultLoad = normalizePassengerLoad(route.defaultLoad, PASSENGER_LOAD_VALUES[0]);
+      const nextOnRoute = Boolean(nextState && nextState.onRoute);
 
       normalized[route.id] = {
-        onRoute: Boolean(nextState && nextState.onRoute),
+        onRoute: nextOnRoute,
+        activePeriod: nextOnRoute
+          ? normalizeActivePeriod(nextState && nextState.activePeriod, 'AM')
+          : null,
         lastUpdated: nextState && typeof nextState.lastUpdated === 'string' ? nextState.lastUpdated : null,
-        coords: sanitizeCoords(nextState && nextState.coords)
+        coords: sanitizeCoords(nextState && nextState.coords),
+        passengerLoad: normalizePassengerLoad(nextState && nextState.passengerLoad, defaultLoad)
       };
     });
 
@@ -75,10 +119,6 @@
     return normalized;
   }
 
-  function getRouteMeta(routeId) {
-    return ROUTES.find((route) => route.id === routeId) || null;
-  }
-
   function setRouteOnRoute(routeId, onRoute, extras) {
     const currentState = readState();
 
@@ -86,10 +126,17 @@
       return null;
     }
 
+    const nextOnRoute = Boolean(onRoute);
+    const nextPeriod = nextOnRoute
+      ? normalizeActivePeriod(extras && extras.period, currentState[routeId].activePeriod || 'AM')
+      : null;
+
     currentState[routeId] = {
-      onRoute: Boolean(onRoute),
+      onRoute: nextOnRoute,
+      activePeriod: nextPeriod,
       lastUpdated: new Date().toISOString(),
-      coords: onRoute ? sanitizeCoords(extras && extras.coords) || currentState[routeId].coords : null
+      coords: nextOnRoute ? sanitizeCoords(extras && extras.coords) || currentState[routeId].coords : null,
+      passengerLoad: normalizePassengerLoad(currentState[routeId].passengerLoad, getRouteDefaultLoad(routeId))
     };
 
     return writeState(currentState)[routeId];
@@ -101,14 +148,47 @@
     const timestamp = new Date().toISOString();
 
     Object.keys(currentState).forEach((routeId) => {
+      const nextOnRoute = Boolean(onRoute);
+
       currentState[routeId] = {
-        onRoute: Boolean(onRoute),
+        onRoute: nextOnRoute,
+        activePeriod: nextOnRoute
+          ? normalizeActivePeriod(extras && extras.period, currentState[routeId].activePeriod || 'AM')
+          : null,
         lastUpdated: timestamp,
-        coords: onRoute ? coords : null
+        coords: nextOnRoute ? coords : null,
+        passengerLoad: normalizePassengerLoad(currentState[routeId].passengerLoad, getRouteDefaultLoad(routeId))
       };
     });
 
     return writeState(currentState);
+  }
+
+  function setRoutePassengerLoad(routeId, passengerLoad, extras) {
+    const currentState = readState();
+
+    if (!currentState[routeId]) {
+      return null;
+    }
+
+    const nextOnRoute = Boolean(currentState[routeId].onRoute);
+
+    // Passenger load can only be changed while the bus is actively On-Route.
+    if (!nextOnRoute) {
+      return null;
+    }
+
+    currentState[routeId] = {
+      onRoute: nextOnRoute,
+      activePeriod: nextOnRoute
+        ? normalizeActivePeriod(currentState[routeId].activePeriod, 'AM')
+        : null,
+      lastUpdated: new Date().toISOString(),
+      coords: nextOnRoute ? sanitizeCoords(extras && extras.coords) || currentState[routeId].coords : null,
+      passengerLoad: normalizePassengerLoad(passengerLoad, getRouteDefaultLoad(routeId))
+    };
+
+    return writeState(currentState)[routeId];
   }
 
   function touchActiveRoutes(coords) {
@@ -137,9 +217,13 @@
 
     return {
       onRoute,
+      activePeriod: onRoute
+        ? normalizeActivePeriod(state ? state.activePeriod : null, 'AM')
+        : null,
       label: onRoute ? 'On-Route' : 'Off-Route',
       lastUpdated: state ? state.lastUpdated : null,
-      coords: state ? state.coords : null
+      coords: state ? state.coords : null,
+      passengerLoad: state ? normalizePassengerLoad(state.passengerLoad, getRouteDefaultLoad(routeId)) : getRouteDefaultLoad(routeId)
     };
   }
 
@@ -165,12 +249,14 @@
 
   window.dcBusStatusSync = {
     routes: ROUTES.slice(),
+    passengerLoadValues: PASSENGER_LOAD_VALUES.slice(),
     storageKey: STORAGE_KEY,
     readState,
     writeState,
     getRouteMeta,
     getDisplayState,
     setRouteOnRoute,
+    setRoutePassengerLoad,
     setAllRoutesOnRoute,
     touchActiveRoutes,
     subscribe

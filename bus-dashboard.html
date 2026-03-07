@@ -55,20 +55,15 @@
 				color: #ffffff;
 			}
 
-			.dashboard-bus-pin {
-				height: 1.65rem;
-				width: 1.65rem;
-				border-radius: 9999px;
-				border: 2px solid #ffffff;
-				box-shadow: 0 8px 16px rgba(2, 6, 23, 0.3);
+			.r102-bus-start-icon {
 				display: flex;
+				height: 28px;
+				width: 28px;
 				align-items: center;
 				justify-content: center;
-				font-size: 0.68rem;
-				font-weight: 900;
-				letter-spacing: 0.08em;
-				text-transform: uppercase;
-				color: #ffffff;
+				font-size: 22px;
+				line-height: 1;
+				filter: drop-shadow(0 2px 4px rgba(15, 23, 42, 0.35));
 			}
 
 			.dashboard-route-stops-grid {
@@ -139,6 +134,17 @@
 			let routeActivationResolver = null;
 			let routeActivationAction = 'on';
 			let isTurningOnRoute = false;
+			let simulationTimerId = null;
+			let simulationPeriod = null;
+			let simulationSegmentIndex = 0;
+			let simulationSegmentStep = 0;
+			let simulationStopPoints = [];
+			const reachedStopIndexByPeriod = { AM: -1, PM: -1 };
+			const SIMULATION_STEPS_PER_SEGMENT = 4;
+			const SIMULATION_TICK_MS = 550;
+			const GEO_PERMISSION_DENIED = 1;
+			const GEO_POSITION_UNAVAILABLE = 2;
+			const GEO_TIMEOUT = 3;
 
 			function formatTimestamp(value) {
 				if (!value) {
@@ -227,6 +233,19 @@
 								</div>
 							</div>
 
+							<div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
+								<div>
+									<p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Passenger Load</p>
+									<p id="dashboardPassengerLoadValue" class="mt-1 text-sm font-bold text-slate-900">Available</p>
+								</div>
+
+								<div class="inline-flex rounded-xl border border-slate-300 bg-white p-1">
+									<button data-dashboard-load="Available" type="button" class="rounded-lg px-3 py-1.5 text-xs font-semibold transition">Available</button>
+									<button data-dashboard-load="Standing" type="button" class="rounded-lg px-3 py-1.5 text-xs font-semibold transition">Standing</button>
+									<button data-dashboard-load="Full" type="button" class="rounded-lg px-3 py-1.5 text-xs font-semibold transition">Full</button>
+								</div>
+							</div>
+
 							<div class="mt-6 flex flex-col gap-3 lg:flex-row lg:items-stretch lg:justify-between">
 								<div class="rounded-2xl border border-cyan-300 bg-cyan-50/50 p-4 text-left text-[13px] leading-relaxed text-slate-800 sm:text-sm lg:flex-1 lg:max-w-2xl">
 									<div class="flex items-start gap-3">
@@ -256,9 +275,14 @@
 										<p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Route Map</p>
 										<p id="dashboardRouteTitle" class="mt-1 text-sm font-bold text-slate-800"></p>
 									</div>
-									<div class="inline-flex rounded-xl border border-slate-300 bg-white p-1">
-										<button id="mapAmToggle" type="button" class="rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] transition">AM</button>
-										<button id="mapPmToggle" type="button" class="rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] transition">PM</button>
+									<div class="flex flex-wrap items-center gap-2">
+										<div class="inline-flex rounded-xl border border-slate-300 bg-white p-1">
+											<button id="mapAmToggle" type="button" class="rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] transition">AM</button>
+											<button id="mapPmToggle" type="button" class="rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] transition">PM</button>
+										</div>
+										<button id="simulateRouteButton" type="button" class="rounded-xl border border-cyan-600 bg-cyan-600 px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.12em] text-white transition hover:bg-cyan-700">
+											Simulate
+										</button>
 									</div>
 								</div>
 
@@ -268,7 +292,7 @@
 						</div>
 					</article>
 
-					<div id="routeActivationModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/45 p-4">
+					<div id="routeActivationModal" class="fixed inset-0 hidden items-center justify-center bg-slate-950/45 p-4" style="z-index: 2000;">
 						<div class="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl">
 							<p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Confirmation</p>
 							<h2 id="routeActivationTitle" class="mt-2 text-xl font-extrabold text-slate-900">Turn ${routeMeta.id} On-Route?</h2>
@@ -278,7 +302,7 @@
 								<button id="routeActivationCancel" type="button" class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
 									Cancel
 								</button>
-								<button id="routeActivationConfirm" type="button" class="rounded-xl px-4 py-2 text-sm font-extrabold uppercase tracking-[0.14em] text-white transition hover:opacity-90" style="background:#16a34a;">
+								<button id="routeActivationConfirm" type="button" class="rounded-xl px-4 py-2 text-sm font-extrabold uppercase tracking-[0.14em] text-white transition hover:opacity-90" style="background:#22c55e;">
 									Confirm
 								</button>
 							</div>
@@ -333,21 +357,21 @@
 
 				if (modalElements.title) {
 					modalElements.title.textContent = routeActivationAction === 'off'
-						? `Turn ${routeMeta.id} Off-Route?`
-						: `Turn ${routeMeta.id} On-Route?`;
+						? `Turn ${routeMeta.id} ${activeMapPeriod} Off-Route?`
+						: `Turn ${routeMeta.id} ${activeMapPeriod} On-Route?`;
 				}
 
 				if (modalElements.message) {
 					modalElements.message.textContent = routeActivationAction === 'off'
-						? 'Passengers will see this bus as inactive until you turn it on again.'
-						: 'This bus will be shown as active to passengers.';
+						? `Passengers will see this bus as inactive for ${activeMapPeriod} until you turn it on again.`
+						: `This bus will be shown as active for ${activeMapPeriod} in passenger view.`;
 				}
 
 				if (modalElements.confirmButton) {
 					modalElements.confirmButton.textContent = routeActivationAction === 'off'
 						? 'Confirm Turn Off'
 						: 'Confirm Turn On';
-					modalElements.confirmButton.style.background = routeActivationAction === 'off' ? '#dc2626' : '#16a34a';
+					modalElements.confirmButton.style.background = routeActivationAction === 'off' ? '#dc2626' : '#22c55e';
 				}
 
 				modalElements.modal.classList.remove('hidden');
@@ -386,6 +410,385 @@
 					am: document.getElementById('mapAmToggle'),
 					pm: document.getElementById('mapPmToggle')
 				};
+			}
+
+			function normalizePassengerLoadValue(loadValue) {
+				const supportedLoads = ['Available', 'Standing', 'Full'];
+				if (supportedLoads.includes(loadValue)) {
+					return loadValue;
+				}
+
+				return 'Available';
+			}
+
+			function getDashboardPassengerLoadButtons() {
+				return Array.from(document.querySelectorAll('[data-dashboard-load]'));
+			}
+
+			function isRouteActiveForPeriod(runtime, period = activeMapPeriod) {
+				if (!runtime || !runtime.onRoute) {
+					return false;
+				}
+
+				return runtime.activePeriod === period;
+			}
+
+			function isOtherPeriodCurrentlyActive(runtime, period = activeMapPeriod) {
+				if (!runtime || !runtime.onRoute) {
+					return false;
+				}
+
+				return runtime.activePeriod !== period;
+			}
+
+			function getSimulateRouteButton() {
+				return document.getElementById('simulateRouteButton');
+			}
+
+			function setReachedStopIndex(period, value) {
+				const normalizedPeriod = period === 'PM' ? 'PM' : 'AM';
+				const numericValue = Number.isFinite(value) ? Math.floor(value) : -1;
+				reachedStopIndexByPeriod[normalizedPeriod] = Math.max(-1, numericValue);
+			}
+
+			function getReachedStopIndex(period) {
+				const normalizedPeriod = period === 'PM' ? 'PM' : 'AM';
+				const storedValue = reachedStopIndexByPeriod[normalizedPeriod];
+				return Number.isFinite(storedValue) ? Math.max(-1, Math.floor(storedValue)) : -1;
+			}
+
+			function resetReachedStopIndexes() {
+				reachedStopIndexByPeriod.AM = -1;
+				reachedStopIndexByPeriod.PM = -1;
+			}
+
+			function getRoutePeriodData(period = activeMapPeriod) {
+				if (!routeMeta) {
+					return null;
+				}
+
+				const routePeriods = routeMapData.detailedRoutes[routeMeta.id];
+				if (!routePeriods) {
+					return null;
+				}
+
+				const selectedPeriod = period === 'PM' ? 'PM' : 'AM';
+				const periodData = routePeriods[selectedPeriod] || routePeriods.AM || routePeriods.PM;
+
+				if (!periodData || !Array.isArray(periodData.stops)) {
+					return null;
+				}
+
+				return {
+					selectedPeriod,
+					periodData
+				};
+			}
+
+			function getSimulationStopPoints(period = activeMapPeriod) {
+				const periodDetails = getRoutePeriodData(period);
+				if (!periodDetails || !routeMeta) {
+					return {
+						selectedPeriod: period === 'PM' ? 'PM' : 'AM',
+						periodData: null,
+						points: []
+					};
+				}
+
+				const coordinateTable = routeMapData.stopCoordinates[routeMeta.id] || {};
+				const points = [];
+
+				periodDetails.periodData.stops.forEach((stopName, stopIndex) => {
+					const coords = coordinateTable[stopName];
+					if (!Array.isArray(coords) || coords.length !== 2) {
+						return;
+					}
+
+					if (!Number.isFinite(coords[0]) || !Number.isFinite(coords[1])) {
+						return;
+					}
+
+					points.push({
+						stopName,
+						stopIndex,
+						coords
+					});
+				});
+
+				return {
+					selectedPeriod: periodDetails.selectedPeriod,
+					periodData: periodDetails.periodData,
+					points
+				};
+			}
+
+			function getRouteStopListItemClass(isPassed) {
+				if (isPassed) {
+					return 'rounded-xl border border-emerald-300 bg-emerald-100 px-3 py-2 text-emerald-900';
+				}
+
+				return 'rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700';
+			}
+
+			function updateSimulationButtonState(isSelectedPeriodActive) {
+				const simulateButton = getSimulateRouteButton();
+				if (!simulateButton) {
+					return;
+				}
+
+				const isCurrentPeriodSimulating = simulationTimerId !== null && simulationPeriod === activeMapPeriod;
+				const canSimulate = isSelectedPeriodActive || isCurrentPeriodSimulating;
+
+				simulateButton.textContent = isCurrentPeriodSimulating ? 'Stop Simulate' : 'Simulate';
+				simulateButton.disabled = !canSimulate;
+
+				if (!canSimulate) {
+					simulateButton.className = 'rounded-xl border border-slate-300 bg-slate-200 px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.12em] text-slate-500 opacity-70 cursor-not-allowed';
+					return;
+				}
+
+				simulateButton.className = isCurrentPeriodSimulating
+					? 'rounded-xl border border-rose-700 bg-rose-600 px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.12em] text-white transition hover:bg-rose-700'
+					: 'rounded-xl border border-cyan-600 bg-cyan-600 px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.12em] text-white transition hover:bg-cyan-700';
+			}
+
+			function stopRouteSimulation(options = {}) {
+				const wasRunning = simulationTimerId !== null;
+
+				if (simulationTimerId !== null) {
+					window.clearInterval(simulationTimerId);
+					simulationTimerId = null;
+				}
+
+				if (options.resetProgress) {
+					resetReachedStopIndexes();
+				}
+
+				simulationPeriod = null;
+				simulationSegmentIndex = 0;
+				simulationSegmentStep = 0;
+				simulationStopPoints = [];
+
+				if (wasRunning || options.forceRefresh) {
+					updateDashboardUI();
+				}
+
+				if (options.message) {
+					setAlert(options.message, options.tone || 'info');
+				}
+			}
+
+			function runRouteSimulationTick() {
+				if (!routeMeta || !simulationPeriod || simulationStopPoints.length < 2) {
+					stopRouteSimulation({ forceRefresh: true });
+					return;
+				}
+
+				const runtime = routeStore.getDisplayState(routeMeta.id);
+				if (!isRouteActiveForPeriod(runtime, simulationPeriod)) {
+					stopRouteSimulation({
+						message: `Simulation stopped because ${routeMeta.id} ${simulationPeriod} is Off-Route.`,
+						tone: 'info'
+					});
+					return;
+				}
+
+				if (simulationSegmentIndex >= simulationStopPoints.length - 1) {
+					stopRouteSimulation({
+						message: `${routeMeta.id} ${simulationPeriod} simulation completed.`,
+						tone: 'success'
+					});
+					return;
+				}
+
+				const fromPoint = simulationStopPoints[simulationSegmentIndex];
+				const toPoint = simulationStopPoints[simulationSegmentIndex + 1];
+
+				simulationSegmentStep += 1;
+				const progress = Math.min(simulationSegmentStep / SIMULATION_STEPS_PER_SEGMENT, 1);
+				const lat = fromPoint.coords[0] + ((toPoint.coords[0] - fromPoint.coords[0]) * progress);
+				const lng = fromPoint.coords[1] + ((toPoint.coords[1] - fromPoint.coords[1]) * progress);
+
+				routeStore.setRouteOnRoute(routeMeta.id, true, {
+					coords: { lat, lng },
+					period: simulationPeriod
+				});
+
+				if (progress >= 1) {
+					simulationSegmentIndex += 1;
+					simulationSegmentStep = 0;
+					setReachedStopIndex(simulationPeriod, simulationStopPoints[simulationSegmentIndex].stopIndex);
+
+					if (simulationSegmentIndex >= simulationStopPoints.length - 1) {
+						stopRouteSimulation({
+							message: `${routeMeta.id} ${simulationPeriod} simulation completed.`,
+							tone: 'success',
+							forceRefresh: true
+						});
+						return;
+					}
+				}
+
+				updateDashboardUI();
+			}
+
+			function startRouteSimulation() {
+				if (!routeMeta || !routeStore) {
+					return;
+				}
+
+				const runtime = routeStore.getDisplayState(routeMeta.id);
+				if (!isRouteActiveForPeriod(runtime, activeMapPeriod)) {
+					setAlert(`Turn ${routeMeta.id} ${activeMapPeriod} On-Route first before simulating.`, 'info');
+					updateDashboardUI();
+					return;
+				}
+
+				const simulationData = getSimulationStopPoints(activeMapPeriod);
+				if (!simulationData.periodData || simulationData.points.length < 2) {
+					setAlert('Not enough mapped stops to run simulation for this period.', 'error');
+					updateDashboardUI();
+					return;
+				}
+
+				stopRouteSimulation();
+
+				simulationPeriod = simulationData.selectedPeriod;
+				simulationStopPoints = simulationData.points;
+				simulationSegmentIndex = 0;
+				simulationSegmentStep = 0;
+				setReachedStopIndex(simulationPeriod, simulationStopPoints[0].stopIndex);
+
+				const firstPoint = simulationStopPoints[0].coords;
+				routeStore.setRouteOnRoute(routeMeta.id, true, {
+					coords: {
+						lat: firstPoint[0],
+						lng: firstPoint[1]
+					},
+					period: simulationPeriod
+				});
+
+				updateDashboardUI();
+				simulationTimerId = window.setInterval(runRouteSimulationTick, SIMULATION_TICK_MS);
+				setAlert(`Simulation started for ${routeMeta.id} ${simulationPeriod}.`, 'info');
+			}
+
+			function toggleRouteSimulation() {
+				const isCurrentPeriodSimulating = simulationTimerId !== null && simulationPeriod === activeMapPeriod;
+				if (isCurrentPeriodSimulating) {
+					stopRouteSimulation({
+						message: `Simulation stopped for ${routeMeta.id} ${activeMapPeriod}.`,
+						tone: 'info'
+					});
+					return;
+				}
+
+				startRouteSimulation();
+			}
+
+			function setActiveMapPeriod(nextPeriod) {
+				const normalizedPeriod = nextPeriod === 'PM' ? 'PM' : 'AM';
+
+				if (activeMapPeriod === normalizedPeriod) {
+					return;
+				}
+
+				if (simulationTimerId !== null && simulationPeriod && simulationPeriod !== normalizedPeriod) {
+					stopRouteSimulation({
+						message: `Simulation for ${routeMeta.id} ${simulationPeriod} stopped after switching to ${normalizedPeriod}.`,
+						tone: 'info'
+					});
+				}
+
+				activeMapPeriod = normalizedPeriod;
+				updateDashboardUI();
+			}
+
+			function getGeolocationErrorCode(error) {
+				if (!error || typeof error.code !== 'number') {
+					return 0;
+				}
+
+				return error.code;
+			}
+
+			function handleLocationWatchError(error) {
+				const errorCode = getGeolocationErrorCode(error);
+
+				if (errorCode === GEO_PERMISSION_DENIED) {
+					stopRouteSimulation({ resetProgress: true });
+					routeStore.setRouteOnRoute(routeMeta.id, false);
+					latestCoords = null;
+					locationPermissionState = 'denied';
+					stopLocationWatch();
+					updateDashboardUI();
+					setAlert('Location permission was denied. This bus is now Off-Route.', 'error');
+					return;
+				}
+
+				if (errorCode === GEO_TIMEOUT) {
+					setAlert('GPS is taking too long to respond. Bus remains On-Route and will keep trying.', 'info');
+					return;
+				}
+
+				if (errorCode === GEO_POSITION_UNAVAILABLE) {
+					setAlert('GPS position is temporarily unavailable. Bus remains On-Route and will retry.', 'info');
+					return;
+				}
+
+				setAlert('Temporary location issue detected. Bus remains On-Route.', 'info');
+			}
+
+			function getDashboardPassengerLoadButtonClass(loadValue, isActive) {
+				const activeClasses = {
+					Available: 'rounded-lg bg-green-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm',
+					Standing: 'rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm',
+					Full: 'rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm'
+				};
+
+				const inactiveClasses = {
+					Available: 'rounded-lg border border-green-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600',
+					Standing: 'rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600',
+					Full: 'rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600'
+				};
+
+				const selectedLoad = normalizePassengerLoadValue(loadValue);
+				return isActive ? activeClasses[selectedLoad] : inactiveClasses[selectedLoad];
+			}
+
+			function updateDashboardPassengerLoadUI(loadValue, isOnRoute) {
+				const normalizedLoad = normalizePassengerLoadValue(loadValue);
+				const loadValueElement = document.getElementById('dashboardPassengerLoadValue');
+
+				if (loadValueElement) {
+					loadValueElement.textContent = normalizedLoad;
+				}
+
+				getDashboardPassengerLoadButtons().forEach((button) => {
+					const option = normalizePassengerLoadValue(button.dataset.dashboardLoad);
+					const isActive = option === normalizedLoad;
+					const disabledStateClasses = isOnRoute ? '' : ' opacity-50 cursor-not-allowed';
+					button.className = `${getDashboardPassengerLoadButtonClass(option, isActive)}${disabledStateClasses}`;
+					button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+					button.disabled = !isOnRoute;
+				});
+			}
+
+			function setDashboardPassengerLoad(nextLoadValue) {
+				if (!routeMeta || !routeStore || typeof routeStore.setRoutePassengerLoad !== 'function') {
+					return;
+				}
+
+				const runtime = routeStore.getDisplayState(routeMeta.id);
+				const isPeriodActive = isRouteActiveForPeriod(runtime, activeMapPeriod);
+				if (!isPeriodActive) {
+					setAlert(`Turn this bus On-Route for ${activeMapPeriod} before changing passenger load.`, 'info');
+					updateDashboardUI();
+					return;
+				}
+
+				routeStore.setRoutePassengerLoad(routeMeta.id, normalizePassengerLoadValue(nextLoadValue));
+				updateDashboardUI();
 			}
 
 			function setMapPeriodToggleState(period) {
@@ -457,15 +860,11 @@
 			}
 
 			function buildBusIcon() {
-				if (!routeMeta) {
-					return null;
-				}
-
 				return L.divIcon({
 					className: '',
-					html: `<div class="dashboard-bus-pin" style="background:${routeMeta.color};">bus</div>`,
-					iconSize: [27, 27],
-					iconAnchor: [13, 13]
+					html: '<div class="r102-bus-start-icon" aria-hidden="true">🚌</div>',
+					iconSize: [28, 28],
+					iconAnchor: [14, 34]
 				});
 			}
 
@@ -487,6 +886,9 @@
 				const periodData = routePeriods[selectedPeriod];
 				const routeTitle = document.getElementById('dashboardRouteTitle');
 				const routeStops = document.getElementById('dashboardRouteStops');
+				const runtimeState = routeStore.getDisplayState(routeMeta.id);
+				const isSelectedPeriodActive = isRouteActiveForPeriod(runtimeState, selectedPeriod);
+				const reachedStopIndex = isSelectedPeriodActive ? getReachedStopIndex(selectedPeriod) : -1;
 
 				if (routeTitle) {
 					routeTitle.textContent = periodData.title;
@@ -494,10 +896,12 @@
 
 				if (routeStops) {
 					routeStops.innerHTML = periodData.stops
-						.map(
-							(stopName, index) =>
-								`<li class="rounded-xl border border-slate-200 bg-white px-3 py-2"><span class="font-bold text-slate-900">${index + 1}.</span> ${stopName}</li>`
-						)
+						.map((stopName, index) => {
+							const isPassed = index <= reachedStopIndex;
+							const stopNumberClass = isPassed ? 'font-bold text-emerald-800' : 'font-bold text-slate-900';
+
+							return `<li class="${getRouteStopListItemClass(isPassed)}"><span class="${stopNumberClass}">${index + 1}.</span> ${stopName}</li>`;
+						})
 						.join('');
 				}
 
@@ -541,13 +945,24 @@
 						.addTo(markerLayer);
 				});
 
-				const runtimeState = routeStore.getDisplayState(routeMeta.id);
-				const liveCoords = runtimeState.coords || latestCoords;
-				if (runtimeState.onRoute && liveCoords && Number.isFinite(liveCoords.lat) && Number.isFinite(liveCoords.lng)) {
-					L.marker([liveCoords.lat, liveCoords.lng], { icon: buildBusIcon() })
-						.bindTooltip(`Live ${routeMeta.id} bus`, {
+				const hasRuntimeCoords = Boolean(
+					runtimeState.coords
+					&& Number.isFinite(runtimeState.coords.lat)
+					&& Number.isFinite(runtimeState.coords.lng)
+				);
+				const busPoint = hasRuntimeCoords
+					? [runtimeState.coords.lat, runtimeState.coords.lng]
+					: polylinePoints[0];
+				const busTooltip = hasRuntimeCoords
+					? `Live ${routeMeta.id} (${selectedPeriod})`
+					: `Bus Start: ${periodData.stops[0]}`;
+
+				if (isSelectedPeriodActive && Array.isArray(busPoint)) {
+					L.marker(busPoint, { icon: buildBusIcon() })
+						.bindTooltip(busTooltip, {
 							direction: 'top',
-							offset: [0, -10]
+							offset: [0, -20],
+							opacity: 0.95
 						})
 						.addTo(markerLayer);
 				}
@@ -579,6 +994,8 @@
 
 				const runtime = routeStore.getDisplayState(routeMeta.id);
 				const isOnRoute = runtime.onRoute;
+				const isSelectedPeriodActive = isRouteActiveForPeriod(runtime, activeMapPeriod);
+				const isOtherPeriodActive = isOtherPeriodCurrentlyActive(runtime, activeMapPeriod);
 				const dashboardStatusBadge = document.getElementById('dashboardStatusBadge');
 				const dashboardBusId = document.getElementById('dashboardBusId');
 				const dashboardLocationState = document.getElementById('dashboardLocationState');
@@ -588,10 +1005,13 @@
 
 				dashboardBusId.textContent = operatorSession.busId;
 				dashboardLastSync.textContent = formatTimestamp(runtime.lastUpdated);
-				dashboardStatusBadge.textContent = isOnRoute ? 'On-Route' : 'Off-Route';
-				dashboardStatusBadge.className = isOnRoute
-					? 'rounded-full bg-emerald-100 px-4 py-1.5 text-xs font-bold text-emerald-700'
-					: 'rounded-full bg-slate-200 px-4 py-1.5 text-xs font-bold text-slate-700';
+				dashboardStatusBadge.textContent = isSelectedPeriodActive
+					? `On-Route (${activeMapPeriod})`
+					: `Off-Route (${activeMapPeriod})`;
+				dashboardStatusBadge.className = isSelectedPeriodActive
+					? 'rounded-full bg-green-500 px-4 py-1.5 text-xs font-bold text-white'
+					: 'rounded-full bg-rose-600 px-4 py-1.5 text-xs font-bold text-white';
+				updateDashboardPassengerLoadUI(runtime.passengerLoad, isSelectedPeriodActive);
 
 				if (locationPermissionState === 'granted') {
 					dashboardLocationState.textContent = isOnRoute ? 'Location Active' : 'Location Ready';
@@ -615,15 +1035,23 @@
 					dashboardLocationHint.textContent = 'Checking location permission.';
 				}
 
-				dashboardActionButton.textContent = isTurningOnRoute && !isOnRoute
-					? 'Turning On...'
-					: (isOnRoute ? 'Turn Off On-Route' : 'Turn On On-Route');
-				dashboardActionButton.style.background = isOnRoute ? '#dc2626' : '#16a34a';
+				dashboardActionButton.textContent = isOtherPeriodActive
+					? `Turn Off ${runtime.activePeriod} first`
+					: (isTurningOnRoute && !isSelectedPeriodActive
+						? 'Turning On...'
+						: (isSelectedPeriodActive ? 'Turn Off On-Route' : 'Turn On On-Route'));
+				dashboardActionButton.style.background = isOtherPeriodActive
+					? '#94a3b8'
+					: (isSelectedPeriodActive ? '#dc2626' : '#22c55e');
 				dashboardActionButton.style.color = '#ffffff';
-				dashboardActionButton.style.borderColor = isOnRoute ? '#991b1b' : '#15803d';
-				dashboardActionButton.disabled = isTurningOnRoute;
-				dashboardActionButton.classList.toggle('opacity-70', isTurningOnRoute);
+				dashboardActionButton.style.borderColor = isOtherPeriodActive
+					? '#64748b'
+					: (isSelectedPeriodActive ? '#991b1b' : '#16a34a');
+				dashboardActionButton.disabled = isTurningOnRoute || isOtherPeriodActive;
+				dashboardActionButton.classList.toggle('opacity-70', isTurningOnRoute || isOtherPeriodActive);
 				dashboardActionButton.classList.toggle('cursor-wait', isTurningOnRoute);
+				dashboardActionButton.classList.toggle('cursor-not-allowed', isOtherPeriodActive);
+				updateSimulationButtonState(isSelectedPeriodActive);
 
 				renderSelectedRouteMap(activeMapPeriod);
 			}
@@ -644,25 +1072,28 @@
 
 				locationWatchId = navigator.geolocation.watchPosition(
 					(position) => {
+						if (simulationTimerId !== null) {
+							return;
+						}
+
 						latestCoords = {
 							lat: position.coords.latitude,
 							lng: position.coords.longitude
 						};
-						routeStore.setRouteOnRoute(routeMeta.id, true, { coords: latestCoords });
+						const runtime = routeStore.getDisplayState(routeMeta.id);
+						routeStore.setRouteOnRoute(routeMeta.id, true, {
+							coords: latestCoords,
+							period: runtime.activePeriod || activeMapPeriod
+						});
 						updateDashboardUI();
 					},
-					() => {
-						routeStore.setRouteOnRoute(routeMeta.id, false);
-						latestCoords = null;
-						locationPermissionState = 'denied';
-						stopLocationWatch();
-						updateDashboardUI();
-						setAlert('Location access was turned off. This bus is now Off-Route.', 'error');
+					(error) => {
+						handleLocationWatchError(error);
 					},
 					{
 						enableHighAccuracy: true,
-						maximumAge: 0,
-						timeout: 10000
+						maximumAge: 15000,
+						timeout: 20000
 					}
 				);
 			}
@@ -700,7 +1131,8 @@
 					permissionStatusHandle.onchange = () => {
 						locationPermissionState = permissionStatusHandle.state;
 
-						if (locationPermissionState !== 'granted' && routeMeta) {
+						if (locationPermissionState === 'denied' && routeMeta) {
+							stopRouteSimulation({ resetProgress: true });
 							routeStore.setRouteOnRoute(routeMeta.id, false);
 							latestCoords = null;
 							syncLocationWatch();
@@ -735,21 +1167,23 @@
 							lng: position.coords.longitude
 						};
 						locationPermissionState = 'granted';
-						routeStore.setRouteOnRoute(routeMeta.id, true, { coords: latestCoords });
+						routeStore.setRouteOnRoute(routeMeta.id, true, {
+							coords: latestCoords,
+							period: activeMapPeriod
+						});
 						updateDashboardUI();
 						syncLocationWatch();
-						setAlert(`${routeMeta.id} is now On-Route.`, 'success');
+						setAlert(`${routeMeta.id} ${activeMapPeriod} is now On-Route.`, 'success');
 					},
 					() => {
 						isTurningOnRoute = false;
-						routeStore.setRouteOnRoute(routeMeta.id, false);
 						updateDashboardUI();
 						setAlert('Location access is required before turning this bus On-Route.', 'error');
 					},
 					{
 						enableHighAccuracy: true,
-						maximumAge: 0,
-						timeout: 10000
+						maximumAge: 15000,
+						timeout: 20000
 					}
 				);
 			}
@@ -761,10 +1195,11 @@
 
 				isTurningOnRoute = false;
 
+				stopRouteSimulation({ resetProgress: true });
 				routeStore.setRouteOnRoute(routeMeta.id, false);
 				updateDashboardUI();
 				syncLocationWatch();
-				setAlert(`${routeMeta.id} is now Off-Route.`, 'info');
+				setAlert(`${routeMeta.id} ${activeMapPeriod} is now Off-Route.`, 'info');
 			}
 
 			function toggleRoute() {
@@ -777,7 +1212,15 @@
 				}
 
 				const runtime = routeStore.getDisplayState(routeMeta.id);
-				if (runtime.onRoute) {
+				const isSelectedPeriodActive = isRouteActiveForPeriod(runtime, activeMapPeriod);
+				const isOtherPeriodActive = isOtherPeriodCurrentlyActive(runtime, activeMapPeriod);
+				if (isOtherPeriodActive) {
+					setAlert(`Cannot turn ${activeMapPeriod} On-Route while ${runtime.activePeriod} is active. Turn ${runtime.activePeriod} Off-Route first.`, 'info');
+					updateDashboardUI();
+					return;
+				}
+
+				if (isSelectedPeriodActive) {
 					requestRouteActivationConfirmation('off').then((confirmed) => {
 						if (!confirmed) {
 							return;
@@ -807,6 +1250,12 @@
 
 				document.getElementById('dashboardActionButton').addEventListener('click', toggleRoute);
 
+				getDashboardPassengerLoadButtons().forEach((button) => {
+					button.addEventListener('click', () => {
+						setDashboardPassengerLoad(button.dataset.dashboardLoad);
+					});
+				});
+
 				const routeActivationModalElements = getRouteActivationModalElements();
 				routeActivationModalElements.cancelButton.addEventListener('click', () => {
 					resolveRouteActivation(false);
@@ -821,12 +1270,14 @@
 				});
 
 				document.getElementById('mapAmToggle').addEventListener('click', () => {
-					renderSelectedRouteMap('AM');
+					setActiveMapPeriod('AM');
 				});
 
 				document.getElementById('mapPmToggle').addEventListener('click', () => {
-					renderSelectedRouteMap('PM');
+					setActiveMapPeriod('PM');
 				});
+
+				document.getElementById('simulateRouteButton').addEventListener('click', toggleRouteSimulation);
 
 				routeStore.subscribe(() => {
 					updateDashboardUI();
@@ -844,6 +1295,7 @@
 
 				window.addEventListener('beforeunload', () => {
 					resolveRouteActivation(false);
+					stopRouteSimulation();
 					stopLocationWatch();
 				});
 			}

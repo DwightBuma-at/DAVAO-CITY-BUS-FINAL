@@ -229,8 +229,8 @@
             const runtime = state[route.id] || routeStore.getDisplayState(route.id);
             const isOnRoute = Boolean(runtime.onRoute);
             const statusClasses = isOnRoute
-              ? 'bg-emerald-100 text-emerald-700'
-              : 'bg-slate-200 text-slate-700';
+              ? 'bg-green-500 text-white'
+              : 'bg-rose-600 text-white';
 
             return `
               <article class="overflow-hidden rounded-3xl border border-slate-200 bg-white panel-shadow">

@@ -147,7 +147,7 @@
                 <h2 class="text-lg font-extrabold text-white sm:text-xl">R102 - Toril - GE Torres</h2>
               </div>
 
-              <span class="rounded-full bg-emerald-100 px-4 py-1.5 text-xs font-bold text-emerald-700">On-Route</span>
+              <span class="rounded-full bg-green-500 px-4 py-1.5 text-xs font-bold text-white">On-Route</span>
             </div>
 
             <div class="mb-5 flex flex-wrap items-center gap-2">
@@ -243,7 +243,7 @@
                 <h2 class="text-lg font-extrabold text-white sm:text-xl">R103 - Toril - Roxas</h2>
               </div>
 
-              <span class="rounded-full bg-emerald-100 px-4 py-1.5 text-xs font-bold text-emerald-700">On-Route</span>
+              <span class="rounded-full bg-green-500 px-4 py-1.5 text-xs font-bold text-white">On-Route</span>
             </div>
 
             <div class="mb-5 flex flex-wrap items-center gap-2">
@@ -339,7 +339,7 @@
                 <h2 class="text-lg font-extrabold text-white sm:text-xl">R402 - Mintal - GE Torres</h2>
               </div>
 
-              <span class="rounded-full bg-emerald-100 px-4 py-1.5 text-xs font-bold text-emerald-700">On-Route</span>
+              <span class="rounded-full bg-green-500 px-4 py-1.5 text-xs font-bold text-white">On-Route</span>
             </div>
 
             <div class="mb-5 flex flex-wrap items-center gap-2">
@@ -435,7 +435,7 @@
                 <h2 class="text-lg font-extrabold text-white sm:text-xl">R403 - Mintal - Roxas</h2>
               </div>
 
-              <span class="rounded-full bg-emerald-100 px-4 py-1.5 text-xs font-bold text-emerald-700">On-Route</span>
+              <span class="rounded-full bg-green-500 px-4 py-1.5 text-xs font-bold text-white">On-Route</span>
             </div>
 
             <div class="mb-5 flex flex-wrap items-center gap-2">
@@ -531,7 +531,7 @@
                 <h2 class="text-lg font-extrabold text-white sm:text-xl">R503 - Bangkal - Roxas</h2>
               </div>
 
-              <span class="rounded-full bg-emerald-100 px-4 py-1.5 text-xs font-bold text-emerald-700">On-Route</span>
+              <span class="rounded-full bg-green-500 px-4 py-1.5 text-xs font-bold text-white">On-Route</span>
             </div>
 
             <div class="mb-5 flex flex-wrap items-center gap-2">
@@ -627,7 +627,7 @@
                 <h2 class="text-lg font-extrabold text-white sm:text-xl">R603 - Buhangin - Roxas</h2>
               </div>
 
-              <span class="rounded-full bg-emerald-100 px-4 py-1.5 text-xs font-bold text-emerald-700">On-Route</span>
+              <span class="rounded-full bg-green-500 px-4 py-1.5 text-xs font-bold text-white">On-Route</span>
             </div>
 
             <div class="mb-5 flex flex-wrap items-center gap-2">
@@ -723,7 +723,7 @@
                 <h2 class="text-lg font-extrabold text-white sm:text-xl">R763 - Panacan (via Buhangin)</h2>
               </div>
 
-              <span class="rounded-full bg-emerald-100 px-4 py-1.5 text-xs font-bold text-emerald-700">On-Route</span>
+              <span class="rounded-full bg-green-500 px-4 py-1.5 text-xs font-bold text-white">On-Route</span>
             </div>
 
             <div class="mb-5 flex flex-wrap items-center gap-2">
@@ -819,7 +819,7 @@
                 <h2 class="text-lg font-extrabold text-white sm:text-xl">R783 - Panacan (via Angliongto)</h2>
               </div>
 
-              <span class="rounded-full bg-emerald-100 px-4 py-1.5 text-xs font-bold text-emerald-700">On-Route</span>
+              <span class="rounded-full bg-green-500 px-4 py-1.5 text-xs font-bold text-white">On-Route</span>
             </div>
 
             <div class="mb-5 flex flex-wrap items-center gap-2">
@@ -915,7 +915,7 @@
                 <h2 class="text-lg font-extrabold text-white sm:text-xl">R793 - Panacan (via R Castillo)</h2>
               </div>
 
-              <span class="rounded-full bg-emerald-100 px-4 py-1.5 text-xs font-bold text-emerald-700">On-Route</span>
+              <span class="rounded-full bg-green-500 px-4 py-1.5 text-xs font-bold text-white">On-Route</span>
             </div>
 
             <div class="mb-5 flex flex-wrap items-center gap-2">
@@ -1386,8 +1386,9 @@
       let activeR793Period = 'AM';
       let liveMapRenderToken = 0;
 
-      const onRouteBadgeClasses = ['bg-emerald-100', 'text-emerald-700'];
-      const offRouteBadgeClasses = ['bg-slate-200', 'text-slate-700'];
+      const onRouteBadgeClasses = ['bg-green-500', 'text-white'];
+      const offRouteBadgeClasses = ['bg-rose-600', 'text-white'];
+      const passengerLoadOptions = ['Available', 'Standing', 'Full'];
 
       function getRouteOperationalState(routeId) {
         if (!window.dcBusStatusSync) {
@@ -1400,11 +1401,136 @@
         return window.dcBusStatusSync.getDisplayState(routeId);
       }
 
-      function applyModalOperationalState(routeId) {
+      function getActivePeriodForRoute(routeId) {
+        if (routeId === 'R102') {
+          return activeR102Period;
+        }
+
+        if (routeId === 'R103') {
+          return activeR103Period;
+        }
+
+        if (routeId === 'R402') {
+          return activeR402Period;
+        }
+
+        if (routeId === 'R403') {
+          return activeR403Period;
+        }
+
+        if (routeId === 'R503') {
+          return activeR503Period;
+        }
+
+        if (routeId === 'R603') {
+          return activeR603Period;
+        }
+
+        if (routeId === 'R763') {
+          return activeR763Period;
+        }
+
+        if (routeId === 'R783') {
+          return activeR783Period;
+        }
+
+        if (routeId === 'R793') {
+          return activeR793Period;
+        }
+
+        return 'AM';
+      }
+
+      function getRouteOperationalStateForPeriod(routeId, period) {
         const routeState = getRouteOperationalState(routeId);
+        const selectedPeriod = period === 'PM' ? 'PM' : 'AM';
+        const hasPeriodInfo = typeof routeState.activePeriod === 'string';
+        const isPeriodOnRoute = hasPeriodInfo
+          ? Boolean(routeState.onRoute && routeState.activePeriod === selectedPeriod)
+          : Boolean(routeState.onRoute);
+
+        return {
+          onRoute: isPeriodOnRoute,
+          label: isPeriodOnRoute ? 'On-Route' : 'Off-Route'
+        };
+      }
+
+      function applyModalOperationalState(routeId, period = getActivePeriodForRoute(routeId)) {
+        const routeState = getRouteOperationalStateForPeriod(routeId, period);
         modalStatus.textContent = routeState.label;
-        modalStatus.classList.remove('text-slate-900', 'text-emerald-600', 'text-rose-600');
-        modalStatus.classList.add(routeState.onRoute ? 'text-emerald-600' : 'text-rose-600');
+        modalStatus.classList.remove('text-slate-900', 'text-green-600', 'text-rose-600');
+        modalStatus.classList.add(routeState.onRoute ? 'text-green-600' : 'text-rose-600');
+      }
+
+      function normalizePassengerLoadValue(loadValue) {
+        if (passengerLoadOptions.includes(loadValue)) {
+          return loadValue;
+        }
+
+        return 'Available';
+      }
+
+      function getRoutePassengerLoadState(routeId) {
+        const fallbackLoad = routeData[routeId] && routeData[routeId].status
+          ? normalizePassengerLoadValue(routeData[routeId].status)
+          : 'Available';
+
+        if (!window.dcBusStatusSync) {
+          return fallbackLoad;
+        }
+
+        const routeState = window.dcBusStatusSync.getDisplayState(routeId);
+        return normalizePassengerLoadValue(routeState && routeState.passengerLoad ? routeState.passengerLoad : fallbackLoad);
+      }
+
+      function applyModalPassengerLoadState(routeId) {
+        document.getElementById('modalPassengerLoadValue').textContent = getRoutePassengerLoadState(routeId);
+      }
+
+      function getPassengerLoadButtonClass(loadValue, isActive) {
+        const activeClasses = {
+          Available: 'inline-flex items-center gap-1.5 rounded-lg bg-green-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm',
+          Standing: 'inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm',
+          Full: 'inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm'
+        };
+
+        const inactiveClasses = {
+          Available: 'inline-flex items-center gap-1.5 rounded-lg border border-green-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600',
+          Standing: 'inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600',
+          Full: 'inline-flex items-center gap-1.5 rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600'
+        };
+
+        return isActive ? activeClasses[loadValue] : inactiveClasses[loadValue];
+      }
+
+      function applyPassengerCardPassengerLoadState(article) {
+        const loadButtons = Array.from(article.querySelectorAll('div.mb-5.flex.flex-wrap.items-center.gap-2 button')).slice(0, 3);
+
+        if (!loadButtons.length) {
+          return;
+        }
+
+        const activeLoad = getRoutePassengerLoadState(article.dataset.route);
+
+        loadButtons.forEach((button, index) => {
+          const buttonLoad = passengerLoadOptions[index] || normalizePassengerLoadValue(button.textContent.trim());
+          const isActive = buttonLoad === activeLoad;
+
+          button.className = getPassengerLoadButtonClass(buttonLoad, isActive);
+
+          if (isActive) {
+            button.innerHTML = `
+              <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              ${buttonLoad}
+            `;
+          } else {
+            button.textContent = buttonLoad;
+          }
+
+          button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
       }
 
       function applyPassengerCardOperationalState(article) {
@@ -1423,10 +1549,17 @@
       function syncPassengerOperationalState() {
         document.querySelectorAll('article[data-route]').forEach((article) => {
           applyPassengerCardOperationalState(article);
+          applyPassengerCardPassengerLoadState(article);
         });
 
         if (activeRouteId) {
-          applyModalOperationalState(activeRouteId);
+          const activePeriod = getActivePeriodForRoute(activeRouteId);
+          applyModalOperationalState(activeRouteId, activePeriod);
+          applyModalPassengerLoadState(activeRouteId);
+
+          if (activeRouteData && routeModal && !routeModal.classList.contains('hidden')) {
+            updateRouteMap(activeRouteId, activeRouteData, activePeriod);
+          }
         }
       }
 
@@ -1646,6 +1779,13 @@
       }
 
       async function updateRouteMap(routeId, routeInfo, period) {
+        const selectedPeriod = period === 'PM' ? 'PM' : 'AM';
+
+        if (activeRouteId === routeId && routeModal && !routeModal.classList.contains('hidden')) {
+          applyModalOperationalState(routeId, selectedPeriod);
+          refreshActiveRouteDetailedStops(routeId, selectedPeriod);
+        }
+
         initializeLiveMap();
 
         if (!liveMap) {
@@ -1763,7 +1903,7 @@
         };
 
         if (routeId === 'R102') {
-          selectedStops = period === 'PM' ? r102DetailedRoutes.PM.stops : r102DetailedRoutes.AM.stops;
+          selectedStops = selectedPeriod === 'PM' ? r102DetailedRoutes.PM.stops : r102DetailedRoutes.AM.stops;
           selectedStopCoordinates = r102StopCoordinates;
           pathPoints = selectedStops
             .map((stop) => selectedStopCoordinates[stop])
@@ -1771,7 +1911,7 @@
           startLabel = selectedStops[0];
           endLabel = selectedStops[selectedStops.length - 1];
         } else if (routeId === 'R103') {
-          selectedStops = period === 'PM' ? r103DetailedRoutes.PM.stops : r103DetailedRoutes.AM.stops;
+          selectedStops = selectedPeriod === 'PM' ? r103DetailedRoutes.PM.stops : r103DetailedRoutes.AM.stops;
           selectedStopCoordinates = r103StopCoordinates;
           pathPoints = selectedStops
             .map((stop) => selectedStopCoordinates[stop])
@@ -1779,7 +1919,7 @@
           startLabel = selectedStops[0];
           endLabel = selectedStops[selectedStops.length - 1];
         } else if (routeId === 'R402') {
-          selectedStops = period === 'PM' ? r402DetailedRoutes.PM.stops : r402DetailedRoutes.AM.stops;
+          selectedStops = selectedPeriod === 'PM' ? r402DetailedRoutes.PM.stops : r402DetailedRoutes.AM.stops;
           selectedStopCoordinates = r402StopCoordinates;
           pathPoints = selectedStops
             .map((stop) => selectedStopCoordinates[stop])
@@ -1787,7 +1927,7 @@
           startLabel = selectedStops[0];
           endLabel = selectedStops[selectedStops.length - 1];
         } else if (routeId === 'R403') {
-          selectedStops = period === 'PM' ? r403DetailedRoutes.PM.stops : r403DetailedRoutes.AM.stops;
+          selectedStops = selectedPeriod === 'PM' ? r403DetailedRoutes.PM.stops : r403DetailedRoutes.AM.stops;
           selectedStopCoordinates = r403StopCoordinates;
           pathPoints = selectedStops
             .map((stop) => selectedStopCoordinates[stop])
@@ -1795,7 +1935,7 @@
           startLabel = selectedStops[0];
           endLabel = selectedStops[selectedStops.length - 1];
         } else if (routeId === 'R503') {
-          selectedStops = period === 'PM' ? r503DetailedRoutes.PM.stops : r503DetailedRoutes.AM.stops;
+          selectedStops = selectedPeriod === 'PM' ? r503DetailedRoutes.PM.stops : r503DetailedRoutes.AM.stops;
           selectedStopCoordinates = r503StopCoordinates;
           pathPoints = selectedStops
             .map((stop) => selectedStopCoordinates[stop])
@@ -1803,7 +1943,7 @@
           startLabel = selectedStops[0];
           endLabel = selectedStops[selectedStops.length - 1];
         } else if (routeId === 'R603') {
-          selectedStops = period === 'PM' ? r603DetailedRoutes.PM.stops : r603DetailedRoutes.AM.stops;
+          selectedStops = selectedPeriod === 'PM' ? r603DetailedRoutes.PM.stops : r603DetailedRoutes.AM.stops;
           selectedStopCoordinates = r603StopCoordinates;
           pathPoints = selectedStops
             .map((stop) => selectedStopCoordinates[stop])
@@ -1811,7 +1951,7 @@
           startLabel = selectedStops[0];
           endLabel = selectedStops[selectedStops.length - 1];
         } else if (routeId === 'R763') {
-          selectedStops = period === 'PM' ? r763DetailedRoutes.PM.stops : r763DetailedRoutes.AM.stops;
+          selectedStops = selectedPeriod === 'PM' ? r763DetailedRoutes.PM.stops : r763DetailedRoutes.AM.stops;
           selectedStopCoordinates = r763StopCoordinates;
           pathPoints = selectedStops
             .map((stop) => selectedStopCoordinates[stop])
@@ -1819,7 +1959,7 @@
           startLabel = selectedStops[0];
           endLabel = selectedStops[selectedStops.length - 1];
         } else if (routeId === 'R783') {
-          selectedStops = period === 'PM' ? r783DetailedRoutes.PM.stops : r783DetailedRoutes.AM.stops;
+          selectedStops = selectedPeriod === 'PM' ? r783DetailedRoutes.PM.stops : r783DetailedRoutes.AM.stops;
           selectedStopCoordinates = r783StopCoordinates;
           pathPoints = selectedStops
             .map((stop) => selectedStopCoordinates[stop])
@@ -1827,7 +1967,7 @@
           startLabel = selectedStops[0];
           endLabel = selectedStops[selectedStops.length - 1];
         } else if (routeId === 'R793') {
-          selectedStops = period === 'PM' ? r793DetailedRoutes.PM.stops : r793DetailedRoutes.AM.stops;
+          selectedStops = selectedPeriod === 'PM' ? r793DetailedRoutes.PM.stops : r793DetailedRoutes.AM.stops;
           selectedStopCoordinates = r793StopCoordinates;
           pathPoints = selectedStops
             .map((stop) => selectedStopCoordinates[stop])
@@ -1898,7 +2038,29 @@
             });
 
             const startPoint = selectedStopCoordinates[selectedStops[0]];
-            if (Array.isArray(startPoint)) {
+            const normalizedPeriod = selectedPeriod;
+            const runtimeState = window.dcBusStatusSync && typeof window.dcBusStatusSync.getDisplayState === 'function'
+              ? window.dcBusStatusSync.getDisplayState(routeId)
+              : null;
+            const isBusActiveForSelectedPeriod = Boolean(
+              runtimeState
+              && runtimeState.onRoute
+              && runtimeState.activePeriod === normalizedPeriod
+            );
+            const hasLiveCoords = Boolean(
+              runtimeState
+              && runtimeState.coords
+              && Number.isFinite(runtimeState.coords.lat)
+              && Number.isFinite(runtimeState.coords.lng)
+            );
+            const busPoint = hasLiveCoords
+              ? [runtimeState.coords.lat, runtimeState.coords.lng]
+              : startPoint;
+            const busTooltip = hasLiveCoords
+              ? `Live ${routeId} (${normalizedPeriod})`
+              : `Bus Start: ${selectedStops[0]}`;
+
+            if (Array.isArray(busPoint) && isBusActiveForSelectedPeriod) {
               const busStartIcon = L.divIcon({
                 className: '',
                 html: '<div class="r102-bus-start-icon" aria-hidden="true">🚌</div>',
@@ -1906,13 +2068,13 @@
                 iconAnchor: [14, 34]
               });
 
-              L.marker(startPoint, {
+              L.marker(busPoint, {
                 icon: busStartIcon,
-                title: `Bus Start: ${selectedStops[0]}`,
+                title: busTooltip,
                 zIndexOffset: 1200
               })
                 .addTo(markers)
-                .bindTooltip(`Bus Start: ${selectedStops[0]}`, {
+                .bindTooltip(busTooltip, {
                   direction: 'top',
                   offset: [0, -20],
                   opacity: 0.95
@@ -2340,6 +2502,213 @@
         }
       };
 
+      function getRouteStopCoordinateTable(routeId) {
+        if (routeId === 'R102') {
+          return r102StopCoordinates;
+        }
+
+        if (routeId === 'R103') {
+          return r103StopCoordinates;
+        }
+
+        if (routeId === 'R402') {
+          return r402StopCoordinates;
+        }
+
+        if (routeId === 'R403') {
+          return r403StopCoordinates;
+        }
+
+        if (routeId === 'R503') {
+          return r503StopCoordinates;
+        }
+
+        if (routeId === 'R603') {
+          return r603StopCoordinates;
+        }
+
+        if (routeId === 'R763') {
+          return r763StopCoordinates;
+        }
+
+        if (routeId === 'R783') {
+          return r783StopCoordinates;
+        }
+
+        if (routeId === 'R793') {
+          return r793StopCoordinates;
+        }
+
+        return {};
+      }
+
+      function squaredDistance(pointA, pointB) {
+        const latDiff = pointA[0] - pointB[0];
+        const lngDiff = pointA[1] - pointB[1];
+        return (latDiff * latDiff) + (lngDiff * lngDiff);
+      }
+
+      function projectPointToSegment(point, segmentStart, segmentEnd) {
+        const startLat = segmentStart[0];
+        const startLng = segmentStart[1];
+        const endLat = segmentEnd[0];
+        const endLng = segmentEnd[1];
+        const deltaLat = endLat - startLat;
+        const deltaLng = endLng - startLng;
+        const segmentLengthSquared = (deltaLat * deltaLat) + (deltaLng * deltaLng);
+
+        if (segmentLengthSquared <= 0) {
+          return {
+            t: 0,
+            distanceSquared: squaredDistance(point, segmentStart)
+          };
+        }
+
+        const projectionNumerator = ((point[0] - startLat) * deltaLat) + ((point[1] - startLng) * deltaLng);
+        const unclampedT = projectionNumerator / segmentLengthSquared;
+        const t = Math.max(0, Math.min(1, unclampedT));
+        const projectedPoint = [
+          startLat + (deltaLat * t),
+          startLng + (deltaLng * t)
+        ];
+
+        return {
+          t,
+          distanceSquared: squaredDistance(point, projectedPoint)
+        };
+      }
+
+      function getPassedStopIndex(routeId, period, stops) {
+        const selectedPeriod = period === 'PM' ? 'PM' : 'AM';
+        const routeState = getRouteOperationalState(routeId);
+
+        if (!routeState || !routeState.onRoute) {
+          return -1;
+        }
+
+        if (typeof routeState.activePeriod === 'string' && routeState.activePeriod !== selectedPeriod) {
+          return -1;
+        }
+
+        if (
+          !routeState.coords
+          || !Number.isFinite(routeState.coords.lat)
+          || !Number.isFinite(routeState.coords.lng)
+        ) {
+          return -1;
+        }
+
+        const coordinateTable = getRouteStopCoordinateTable(routeId);
+        const stopPoints = stops
+          .map((stopName, stopIndex) => ({
+            stopIndex,
+            coords: coordinateTable[stopName]
+          }))
+          .filter((entry) => Array.isArray(entry.coords) && entry.coords.length === 2);
+
+        if (!stopPoints.length) {
+          return -1;
+        }
+
+        if (stopPoints.length === 1) {
+          return stopPoints[0].stopIndex;
+        }
+
+        const currentPoint = [routeState.coords.lat, routeState.coords.lng];
+        let closestSegment = {
+          distanceSquared: Number.POSITIVE_INFINITY,
+          passedStopIndex: -1
+        };
+
+        for (let segmentIndex = 0; segmentIndex < stopPoints.length - 1; segmentIndex += 1) {
+          const fromPoint = stopPoints[segmentIndex];
+          const toPoint = stopPoints[segmentIndex + 1];
+          const projection = projectPointToSegment(currentPoint, fromPoint.coords, toPoint.coords);
+          const passedStopIndex = projection.t >= 0.98 ? toPoint.stopIndex : fromPoint.stopIndex;
+
+          if (projection.distanceSquared < closestSegment.distanceSquared) {
+            closestSegment = {
+              distanceSquared: projection.distanceSquared,
+              passedStopIndex
+            };
+          }
+        }
+
+        return closestSegment.passedStopIndex;
+      }
+
+      function buildDetailedStopListMarkup(routeId, period, stops) {
+        const passedStopIndex = getPassedStopIndex(routeId, period, stops);
+
+        return stops
+          .map((stopName, stopIndex) => {
+            const isPassed = stopIndex <= passedStopIndex;
+            const stopClassName = isPassed
+              ? 'font-semibold text-emerald-700'
+              : 'text-slate-700';
+
+            return `<li class="${stopClassName}">${stopName}</li>`;
+          })
+          .join('');
+      }
+
+      function refreshActiveRouteDetailedStops(routeId, period) {
+        const selectedPeriod = period === 'PM' ? 'PM' : 'AM';
+
+        if (routeId === 'R102') {
+          const route = r102DetailedRoutes[selectedPeriod];
+          r102RouteStops.innerHTML = buildDetailedStopListMarkup('R102', selectedPeriod, route.stops);
+          return;
+        }
+
+        if (routeId === 'R103') {
+          const route = r103DetailedRoutes[selectedPeriod];
+          r103RouteStops.innerHTML = buildDetailedStopListMarkup('R103', selectedPeriod, route.stops);
+          return;
+        }
+
+        if (routeId === 'R402') {
+          const route = r402DetailedRoutes[selectedPeriod];
+          r402RouteStops.innerHTML = buildDetailedStopListMarkup('R402', selectedPeriod, route.stops);
+          return;
+        }
+
+        if (routeId === 'R403') {
+          const route = r403DetailedRoutes[selectedPeriod];
+          r403RouteStops.innerHTML = buildDetailedStopListMarkup('R403', selectedPeriod, route.stops);
+          return;
+        }
+
+        if (routeId === 'R503') {
+          const route = r503DetailedRoutes[selectedPeriod];
+          r503RouteStops.innerHTML = buildDetailedStopListMarkup('R503', selectedPeriod, route.stops);
+          return;
+        }
+
+        if (routeId === 'R603') {
+          const route = r603DetailedRoutes[selectedPeriod];
+          r603RouteStops.innerHTML = buildDetailedStopListMarkup('R603', selectedPeriod, route.stops);
+          return;
+        }
+
+        if (routeId === 'R763') {
+          const route = r763DetailedRoutes[selectedPeriod];
+          r763RouteStops.innerHTML = buildDetailedStopListMarkup('R763', selectedPeriod, route.stops);
+          return;
+        }
+
+        if (routeId === 'R783') {
+          const route = r783DetailedRoutes[selectedPeriod];
+          r783RouteStops.innerHTML = buildDetailedStopListMarkup('R783', selectedPeriod, route.stops);
+          return;
+        }
+
+        if (routeId === 'R793') {
+          const route = r793DetailedRoutes[selectedPeriod];
+          r793RouteStops.innerHTML = buildDetailedStopListMarkup('R793', selectedPeriod, route.stops);
+        }
+      }
+
       function setR102ToggleState(period) {
         const amActiveClasses = ['bg-amber-500', 'text-white', 'shadow-sm'];
         const pmActiveClasses = ['bg-blue-600', 'text-white', 'shadow-sm'];
@@ -2358,9 +2727,7 @@
         activeR102Period = period;
         const route = r102DetailedRoutes[period];
         r102RouteTitle.textContent = route.title;
-        r102RouteStops.innerHTML = route.stops
-          .map((stop) => `<li>${stop}</li>`)
-          .join('');
+        r102RouteStops.innerHTML = buildDetailedStopListMarkup('R102', period, route.stops);
         setR102ToggleState(period);
       }
 
@@ -2382,9 +2749,7 @@
         activeR103Period = period;
         const route = r103DetailedRoutes[period];
         r103RouteTitle.textContent = route.title;
-        r103RouteStops.innerHTML = route.stops
-          .map((stop) => `<li>${stop}</li>`)
-          .join('');
+        r103RouteStops.innerHTML = buildDetailedStopListMarkup('R103', period, route.stops);
         setR103ToggleState(period);
       }
 
@@ -2406,9 +2771,7 @@
         activeR402Period = period;
         const route = r402DetailedRoutes[period];
         r402RouteTitle.textContent = route.title;
-        r402RouteStops.innerHTML = route.stops
-          .map((stop) => `<li>${stop}</li>`)
-          .join('');
+        r402RouteStops.innerHTML = buildDetailedStopListMarkup('R402', period, route.stops);
         setR402ToggleState(period);
       }
 
@@ -2430,9 +2793,7 @@
         activeR403Period = period;
         const route = r403DetailedRoutes[period];
         r403RouteTitle.textContent = route.title;
-        r403RouteStops.innerHTML = route.stops
-          .map((stop) => `<li>${stop}</li>`)
-          .join('');
+        r403RouteStops.innerHTML = buildDetailedStopListMarkup('R403', period, route.stops);
         setR403ToggleState(period);
       }
 
@@ -2454,9 +2815,7 @@
         activeR503Period = period;
         const route = r503DetailedRoutes[period];
         r503RouteTitle.textContent = route.title;
-        r503RouteStops.innerHTML = route.stops
-          .map((stop) => `<li>${stop}</li>`)
-          .join('');
+        r503RouteStops.innerHTML = buildDetailedStopListMarkup('R503', period, route.stops);
         setR503ToggleState(period);
       }
 
@@ -2478,9 +2837,7 @@
         activeR603Period = period;
         const route = r603DetailedRoutes[period];
         r603RouteTitle.textContent = route.title;
-        r603RouteStops.innerHTML = route.stops
-          .map((stop) => `<li>${stop}</li>`)
-          .join('');
+        r603RouteStops.innerHTML = buildDetailedStopListMarkup('R603', period, route.stops);
         setR603ToggleState(period);
       }
 
@@ -2502,9 +2859,7 @@
         activeR763Period = period;
         const route = r763DetailedRoutes[period];
         r763RouteTitle.textContent = route.title;
-        r763RouteStops.innerHTML = route.stops
-          .map((stop) => `<li>${stop}</li>`)
-          .join('');
+        r763RouteStops.innerHTML = buildDetailedStopListMarkup('R763', period, route.stops);
         setR763ToggleState(period);
       }
 
@@ -2526,9 +2881,7 @@
         activeR783Period = period;
         const route = r783DetailedRoutes[period];
         r783RouteTitle.textContent = route.title;
-        r783RouteStops.innerHTML = route.stops
-          .map((stop) => `<li>${stop}</li>`)
-          .join('');
+        r783RouteStops.innerHTML = buildDetailedStopListMarkup('R783', period, route.stops);
         setR783ToggleState(period);
       }
 
@@ -2550,9 +2903,7 @@
         activeR793Period = period;
         const route = r793DetailedRoutes[period];
         r793RouteTitle.textContent = route.title;
-        r793RouteStops.innerHTML = route.stops
-          .map((stop) => `<li>${stop}</li>`)
-          .join('');
+        r793RouteStops.innerHTML = buildDetailedStopListMarkup('R793', period, route.stops);
         setR793ToggleState(period);
       }
 
@@ -2796,8 +3147,7 @@
             activeRouteId = routeId;
             activeRouteData = data;
             document.getElementById('modalRouteName').textContent = data.name;
-            applyModalOperationalState(routeId);
-            document.getElementById('modalPassengerLoadValue').textContent = data.status;
+            applyModalPassengerLoadState(routeId);
 
             if (routeId === 'R102') {
               r102RouteToggleSection.classList.remove('hidden');
@@ -2923,25 +3273,8 @@
             `;
             
             routeModal.classList.remove('hidden');
-            const activePeriod = routeId === 'R102'
-              ? activeR102Period
-              : routeId === 'R103'
-                ? activeR103Period
-                : routeId === 'R402'
-                  ? activeR402Period
-                  : routeId === 'R403'
-                    ? activeR403Period
-                    : routeId === 'R503'
-                      ? activeR503Period
-                      : routeId === 'R603'
-                        ? activeR603Period
-                        : routeId === 'R763'
-                          ? activeR763Period
-                          : routeId === 'R783'
-                            ? activeR783Period
-                            : routeId === 'R793'
-                              ? activeR793Period
-                : 'AM';
+            const activePeriod = getActivePeriodForRoute(routeId);
+            applyModalOperationalState(routeId, activePeriod);
             updateRouteMap(routeId, data, activePeriod);
           }
         });
@@ -2979,3 +3312,4 @@
     </script>
   </body>
 </html>
+
