@@ -1385,6 +1385,7 @@
       let activeR783Period = 'AM';
       let activeR793Period = 'AM';
       let liveMapRenderToken = 0;
+      let liveMapViewKey = null;
 
       const onRouteBadgeClasses = ['bg-green-500', 'text-white'];
       const offRouteBadgeClasses = ['bg-rose-600', 'text-white'];
@@ -1780,6 +1781,7 @@
 
       async function updateRouteMap(routeId, routeInfo, period) {
         const selectedPeriod = period === 'PM' ? 'PM' : 'AM';
+        const mapViewKey = `${routeId}-${selectedPeriod}`;
 
         if (activeRouteId === routeId && routeModal && !routeModal.classList.contains('hidden')) {
           applyModalOperationalState(routeId, selectedPeriod);
@@ -1998,12 +2000,17 @@
         const routedPath = roadRouting && pathPoints.length > 1
           ? await roadRouting.getRoadPath(pathPoints)
           : pathPoints;
+        const snappedPathPoints = routedPath.length > 1
+          ? pathPoints.map((point) => snapPointToRoutePath(point, routedPath))
+          : pathPoints;
 
         if (renderToken !== liveMapRenderToken) {
           return;
         }
 
         clearLiveRouteLayers();
+
+        const shouldAutoFitView = liveMapViewKey !== mapViewKey;
 
         if (routedPath.length > 1) {
           liveRouteLayer = L.polyline(routedPath, {
@@ -2014,7 +2021,7 @@
 
           if (shouldRenderDetailedWaypoints) {
             selectedStops.forEach((stop, index) => {
-              const point = selectedStopCoordinates[stop];
+              const point = snappedPathPoints[index] || selectedStopCoordinates[stop];
               if (!Array.isArray(point)) {
                 return;
               }
@@ -2037,7 +2044,7 @@
                 });
             });
 
-            const startPoint = selectedStopCoordinates[selectedStops[0]];
+            const startPoint = snappedPathPoints[0] || selectedStopCoordinates[selectedStops[0]];
             const normalizedPeriod = selectedPeriod;
             const runtimeState = window.dcBusStatusSync && typeof window.dcBusStatusSync.getDisplayState === 'function'
               ? window.dcBusStatusSync.getDisplayState(routeId)
@@ -2053,9 +2060,13 @@
               && Number.isFinite(runtimeState.coords.lat)
               && Number.isFinite(runtimeState.coords.lng)
             );
-            const busPoint = hasLiveCoords
+            const runtimeBusPoint = hasLiveCoords
               ? [runtimeState.coords.lat, runtimeState.coords.lng]
-              : startPoint;
+              : null;
+            const snappedRuntimeBusPoint = runtimeBusPoint && routedPath.length > 1
+              ? snapPointToRoutePath(runtimeBusPoint, routedPath)
+              : runtimeBusPoint;
+            const busPoint = snappedRuntimeBusPoint || startPoint;
             const busTooltip = hasLiveCoords
               ? `Live ${routeId} (${normalizedPeriod})`
               : `Bus Start: ${selectedStops[0]}`;
@@ -2110,10 +2121,13 @@
             }).addTo(markers).bindTooltip(`End: ${endLabel}`);
           }
 
-          liveMap.fitBounds(L.latLngBounds(routedPath), {
-            padding: [24, 24],
-            maxZoom: 13
-          });
+          if (shouldAutoFitView) {
+            liveMap.fitBounds(L.latLngBounds(routedPath), {
+              padding: [24, 24],
+              maxZoom: 13
+            });
+            liveMapViewKey = mapViewKey;
+          }
         } else if (pathPoints.length === 1) {
           L.circleMarker(pathPoints[0], {
             radius: 8,
@@ -2123,9 +2137,15 @@
             fillOpacity: 1
           }).addTo(markers).bindTooltip(startLabel);
 
-          liveMap.setView(pathPoints[0], 12);
+          if (shouldAutoFitView) {
+            liveMap.setView(pathPoints[0], 12);
+            liveMapViewKey = mapViewKey;
+          }
         } else {
-          liveMap.setView(davaoCityCenter, 12);
+          if (shouldAutoFitView) {
+            liveMap.setView(davaoCityCenter, 12);
+            liveMapViewKey = mapViewKey;
+          }
         }
 
         liveMarkerLayer = markers.addTo(liveMap);
@@ -2560,6 +2580,7 @@
         if (segmentLengthSquared <= 0) {
           return {
             t: 0,
+            point: [segmentStart[0], segmentStart[1]],
             distanceSquared: squaredDistance(point, segmentStart)
           };
         }
@@ -2574,8 +2595,35 @@
 
         return {
           t,
+          point: projectedPoint,
           distanceSquared: squaredDistance(point, projectedPoint)
         };
+      }
+
+      function snapPointToRoutePath(point, pathPoints) {
+        if (!Array.isArray(point) || point.length !== 2 || !Array.isArray(pathPoints) || pathPoints.length < 2) {
+          return point;
+        }
+
+        let bestPoint = point;
+        let bestDistanceSquared = Number.POSITIVE_INFINITY;
+
+        for (let segmentIndex = 0; segmentIndex < pathPoints.length - 1; segmentIndex += 1) {
+          const segmentStart = pathPoints[segmentIndex];
+          const segmentEnd = pathPoints[segmentIndex + 1];
+
+          if (!Array.isArray(segmentStart) || !Array.isArray(segmentEnd)) {
+            continue;
+          }
+
+          const projection = projectPointToSegment(point, segmentStart, segmentEnd);
+          if (projection.distanceSquared < bestDistanceSquared) {
+            bestDistanceSquared = projection.distanceSquared;
+            bestPoint = projection.point;
+          }
+        }
+
+        return bestPoint;
       }
 
       function getPassedStopIndex(routeId, period, stops) {
@@ -3283,12 +3331,14 @@
       // Close modal
       closeModalBtn.addEventListener('click', () => {
         routeModal.classList.add('hidden');
+        liveMapViewKey = null;
       });
 
       // Close on outside click
       routeModal.addEventListener('click', (e) => {
         if (e.target === routeModal) {
           routeModal.classList.add('hidden');
+          liveMapViewKey = null;
         }
       });
 
