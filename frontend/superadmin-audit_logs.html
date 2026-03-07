@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Audit Logs - DC Bus Super Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef5ff', 100: '#d9e9ff', 200: '#bdd8ff', 300: '#8dbdff',
+              400: '#5a9eff', 500: '#2f80ed', 600: '#1f66cc', 700: '#184fa3', 800: '#173f80'
+            }
+          },
+          boxShadow: {
+            card: '0 16px 40px -22px rgba(31, 102, 204, 0.45)'
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body {
+      font-family: "Manrope", sans-serif;
+    }
+
+    .sidebar-item {
+      transition: all 0.2s ease;
+    }
+
+    .sidebar-item:hover {
+      background-color: rgba(6, 182, 212, 0.08);
+      transform: translateX(4px);
+    }
+
+    .sidebar-item.active {
+      background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+      color: white;
+    }
+
+    .sidebar-item.active:hover {
+      background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+    }
+
+    .logout-btn {
+      transition: all 0.2s ease;
+    }
+
+    .logout-btn:hover {
+      background-color: rgba(239, 68, 68, 0.1);
+      color: #dc2626;
+    }
+
+    .log-row {
+      transition: background 0.15s ease;
+    }
+
+    .log-row:hover {
+      background-color: #f8fafc;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-50">
+  <!-- Check Authentication -->
+  <script>
+    const session = sessionStorage.getItem('dc-bus-superadmin-session');
+    if (!session) {
+      window.location.href = '../login-superadmin.html';
+    }
+  </script>
+
+  <div class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white border-r border-slate-200 flex flex-col">
+      <!-- Logo -->
+      <div class="p-6 border-b border-slate-200">
+        <img src="../assets/dcbuslogo.png" alt="DC Bus Logo" class="h-16 w-auto" />
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+        <a href="superadmin.html" id="nav-dashboard"
+          class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm text-slate-700">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+          Dashboard
+        </a>
+
+        <a href="superadmin-bus.html" id="nav-bus-management"
+          class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm text-slate-700">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+          </svg>
+          Bus Management
+        </a>
+
+        <a href="superadmin-audit_logs.html" id="nav-audit-logs"
+          class="sidebar-item active flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Audit Logs
+        </a>
+
+        <a href="superadmin-settings.html" id="nav-settings"
+          class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm text-slate-700">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          Settings
+        </a>
+      </nav>
+
+      <!-- Logout Button -->
+      <div class="p-4 border-t border-slate-200">
+        <button onclick="handleLogout()"
+          class="logout-btn flex items-center gap-3 w-full px-4 py-3 rounded-xl font-semibold text-sm text-slate-700">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto">
+      <!-- Header -->
+      <header class="bg-white border-b border-slate-200 px-8 py-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-bold text-slate-900">Audit Logs</h1>
+            <p class="text-sm text-slate-600 mt-1">Route sync activity — Turn On / Turn Off logs</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="text-right">
+              <p class="text-sm font-semibold text-slate-900" id="adminUsername">Super Admin</p>
+              <p class="text-xs text-slate-500">Administrator</p>
+            </div>
+            <div
+              class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-cyan-600 flex items-center justify-center text-white font-bold">
+              SA
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content Area -->
+      <div class="p-8">
+        <!-- Summary Cards -->
+        <div class="grid gap-5 md:grid-cols-3 mb-8" id="summary-cards">
+          <!-- Injected by JS -->
+        </div>
+
+        <!-- Search & Filter -->
+        <div class="flex flex-wrap items-center gap-3 mb-6">
+          <div class="relative flex-1 min-w-[240px] max-w-md">
+            <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" fill="none"
+              stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input type="text" id="searchInput" placeholder="Search by operator, bus, route..."
+              class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent" />
+          </div>
+          <select id="filterAction"
+            class="px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+            <option value="all">All Actions</option>
+            <option value="turn_on">Turn On Route</option>
+            <option value="turn_off">Turn Off Route</option>
+          </select>
+          <select id="filterBus"
+            class="px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+            <option value="all">All Routes</option>
+            <!-- Populated by JS -->
+          </select>
+        </div>
+
+        <!-- Logs Table -->
+        <div class="rounded-3xl border border-slate-200 bg-white shadow-lg overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left border-b border-slate-200 bg-slate-50">
+                  <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Timestamp</th>
+                  <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Operator</th>
+                  <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Bus</th>
+                  <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Details</th>
+                </tr>
+              </thead>
+              <tbody id="logsBody" class="divide-y divide-slate-100">
+                <!-- Injected by JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Empty State -->
+          <div id="emptyState" class="hidden p-12 text-center">
+            <svg class="w-12 h-12 mx-auto text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <p class="text-slate-500 font-semibold">No logs found</p>
+            <p class="text-sm text-slate-400 mt-1">Try adjusting your search or filter</p>
+          </div>
+
+          <!-- Pagination -->
+          <div id="pagination" class="flex items-center justify-between border-t border-slate-200 px-6 py-4">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // ─── Static Audit Log Data ───
+    const auditLogs = [
+      { timestamp: '2026-03-07 06:02:14', operator: 'Juan Dela Cruz', bus: 'BUS-001', route: 'R102', action: 'turn_on', detail: 'Turned ON Route — AM Period started' },
+      { timestamp: '2026-03-07 06:05:32', operator: 'Pedro Reyes', bus: 'BUS-002', route: 'R103', action: 'turn_on', detail: 'Turned ON Route — AM Period started' },
+      { timestamp: '2026-03-07 06:08:45', operator: 'Carlos Mendoza', bus: 'BUS-003', route: 'R402', action: 'turn_on', detail: 'Turned ON Route — AM Period started' },
+      { timestamp: '2026-03-07 06:10:18', operator: 'Roberto Aquino', bus: 'BUS-005', route: 'R503', action: 'turn_on', detail: 'Turned ON Route — AM Period started' },
+      { timestamp: '2026-03-07 06:12:55', operator: 'Antonio Ramos', bus: 'BUS-006', route: 'R603', action: 'turn_on', detail: 'Turned ON Route — AM Period started' },
+      { timestamp: '2026-03-07 06:15:03', operator: 'Francisco Bautista', bus: 'BUS-007', route: 'R763', action: 'turn_on', detail: 'Turned ON Route — AM Period started' },
+      { timestamp: '2026-03-07 06:18:41', operator: 'Eduardo Santiago', bus: 'BUS-009', route: 'R793', action: 'turn_on', detail: 'Turned ON Route — AM Period started' },
+      { timestamp: '2026-03-07 09:55:10', operator: 'Juan Dela Cruz', bus: 'BUS-001', route: 'R102', action: 'turn_off', detail: 'Turned OFF Route — AM Period ended' },
+      { timestamp: '2026-03-07 09:57:22', operator: 'Pedro Reyes', bus: 'BUS-002', route: 'R103', action: 'turn_off', detail: 'Turned OFF Route — AM Period ended' },
+      { timestamp: '2026-03-07 09:58:40', operator: 'Carlos Mendoza', bus: 'BUS-003', route: 'R402', action: 'turn_off', detail: 'Turned OFF Route — AM Period ended' },
+      { timestamp: '2026-03-07 09:59:15', operator: 'Roberto Aquino', bus: 'BUS-005', route: 'R503', action: 'turn_off', detail: 'Turned OFF Route — AM Period ended' },
+      { timestamp: '2026-03-07 10:00:30', operator: 'Antonio Ramos', bus: 'BUS-006', route: 'R603', action: 'turn_off', detail: 'Turned OFF Route — AM Period ended' },
+      { timestamp: '2026-03-07 10:01:05', operator: 'Francisco Bautista', bus: 'BUS-007', route: 'R763', action: 'turn_off', detail: 'Turned OFF Route — AM Period ended' },
+      { timestamp: '2026-03-07 10:02:50', operator: 'Eduardo Santiago', bus: 'BUS-009', route: 'R793', action: 'turn_off', detail: 'Turned OFF Route — AM Period ended' },
+      { timestamp: '2026-03-07 16:01:08', operator: 'Juan Dela Cruz', bus: 'BUS-001', route: 'R102', action: 'turn_on', detail: 'Turned ON Route — PM Period started' },
+      { timestamp: '2026-03-07 16:03:44', operator: 'Pedro Reyes', bus: 'BUS-002', route: 'R103', action: 'turn_on', detail: 'Turned ON Route — PM Period started' },
+      { timestamp: '2026-03-07 16:05:20', operator: 'Carlos Mendoza', bus: 'BUS-003', route: 'R402', action: 'turn_on', detail: 'Turned ON Route — PM Period started' },
+      { timestamp: '2026-03-07 16:07:55', operator: 'Roberto Aquino', bus: 'BUS-005', route: 'R503', action: 'turn_on', detail: 'Turned ON Route — PM Period started' },
+      { timestamp: '2026-03-07 16:10:12', operator: 'Antonio Ramos', bus: 'BUS-006', route: 'R603', action: 'turn_on', detail: 'Turned ON Route — PM Period started' },
+      { timestamp: '2026-03-07 16:12:30', operator: 'Francisco Bautista', bus: 'BUS-007', route: 'R763', action: 'turn_on', detail: 'Turned ON Route — PM Period started' },
+      { timestamp: '2026-03-07 16:15:48', operator: 'Eduardo Santiago', bus: 'BUS-009', route: 'R793', action: 'turn_on', detail: 'Turned ON Route — PM Period started' },
+      { timestamp: '2026-03-06 06:04:22', operator: 'Juan Dela Cruz', bus: 'BUS-001', route: 'R102', action: 'turn_on', detail: 'Turned ON Route — AM Period started' },
+      { timestamp: '2026-03-06 06:07:11', operator: 'Pedro Reyes', bus: 'BUS-002', route: 'R103', action: 'turn_on', detail: 'Turned ON Route — AM Period started' },
+      { timestamp: '2026-03-06 09:52:18', operator: 'Juan Dela Cruz', bus: 'BUS-001', route: 'R102', action: 'turn_off', detail: 'Turned OFF Route — AM Period ended' },
+      { timestamp: '2026-03-06 09:56:44', operator: 'Pedro Reyes', bus: 'BUS-002', route: 'R103', action: 'turn_off', detail: 'Turned OFF Route — AM Period ended' },
+      { timestamp: '2026-03-06 16:02:30', operator: 'Juan Dela Cruz', bus: 'BUS-001', route: 'R102', action: 'turn_on', detail: 'Turned ON Route — PM Period started' },
+      { timestamp: '2026-03-06 16:04:15', operator: 'Pedro Reyes', bus: 'BUS-002', route: 'R103', action: 'turn_on', detail: 'Turned ON Route — PM Period started' },
+      { timestamp: '2026-03-06 20:55:40', operator: 'Juan Dela Cruz', bus: 'BUS-001', route: 'R102', action: 'turn_off', detail: 'Turned OFF Route — PM Period ended' },
+      { timestamp: '2026-03-06 20:58:12', operator: 'Pedro Reyes', bus: 'BUS-002', route: 'R103', action: 'turn_off', detail: 'Turned OFF Route — PM Period ended' },
+    ];
+
+    // Sort newest first
+    auditLogs.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+
+    // Route colors
+    const routeBadgeColors = {
+      R102: 'bg-purple-100 text-purple-700',
+      R103: 'bg-orange-100 text-orange-700',
+      R402: 'bg-blue-100 text-blue-700',
+      R403: 'bg-green-100 text-green-700',
+      R503: 'bg-yellow-100 text-yellow-700',
+      R603: 'bg-pink-100 text-pink-700',
+      R763: 'bg-green-100 text-green-700',
+      R783: 'bg-orange-100 text-orange-700',
+      R793: 'bg-blue-100 text-blue-700',
+    };
+
+    // ─── Render Summary ───
+    function renderSummary() {
+      const totalLogs = auditLogs.length;
+
+      document.getElementById('summary-cards').innerHTML = `
+        <div class="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Total Logs</p>
+              <p class="mt-1 text-2xl font-extrabold text-slate-900">${totalLogs}</p>
+            </div>
+            <div class="h-10 w-10 rounded-xl bg-cyan-100 flex items-center justify-center">
+              <svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    const ROWS_PER_PAGE = 10;
+    let currentPage = 1;
+
+    // ─── Render Logs Table ───
+    function renderLogs(filter = 'all', search = '', busFilter = 'all', page = 1) {
+      const tbody = document.getElementById('logsBody');
+      const emptyState = document.getElementById('emptyState');
+      const paginationEl = document.getElementById('pagination');
+      const searchLower = search.toLowerCase();
+
+      const filtered = auditLogs.filter(log => {
+        const matchAction = filter === 'all' || log.action === filter;
+        const matchBus = busFilter === 'all' || log.route === busFilter;
+        const matchSearch = !search ||
+          log.operator.toLowerCase().includes(searchLower) ||
+          log.bus.toLowerCase().includes(searchLower) ||
+          log.route.toLowerCase().includes(searchLower) ||
+          log.detail.toLowerCase().includes(searchLower) ||
+          log.timestamp.includes(searchLower);
+        return matchAction && matchBus && matchSearch;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '';
+        paginationEl.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      // Pagination
+      const totalPages = Math.ceil(filtered.length / ROWS_PER_PAGE);
+      currentPage = Math.min(page, totalPages);
+      const start = (currentPage - 1) * ROWS_PER_PAGE;
+      const end = start + ROWS_PER_PAGE;
+      const pageItems = filtered.slice(start, end);
+
+      tbody.innerHTML = pageItems.map(log => {
+        const isOn = log.action === 'turn_on';
+        const actionBadge = isOn
+          ? '<span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Turn ON</span>'
+          : '<span class="inline-flex items-center gap-1.5 rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-700"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Turn OFF</span>';
+
+        const routeColor = routeBadgeColors[log.route] || 'bg-slate-100 text-slate-700';
+
+        // Format: Month Day Year - HH:MM:SS
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const [datePart, timePart] = log.timestamp.split(' ');
+        const [yr, mo, dy] = datePart.split('-');
+        const formatted = months[parseInt(mo) - 1] + ' ' + dy + ' ' + yr + ' - ' + timePart;
+
+        return `
+          <tr class="log-row">
+            <td class="px-6 py-4">
+              <p class="text-sm font-semibold text-slate-800">${formatted}</p>
+            </td>
+            <td class="px-6 py-4">
+              <p class="text-sm font-bold text-slate-900">${log.operator}</p>
+            </td>
+            <td class="px-6 py-4">
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-semibold text-slate-800">${log.bus}</span>
+                <span class="text-xs font-bold px-2 py-0.5 rounded-lg ${routeColor}">${log.route}</span>
+              </div>
+            </td>
+            <td class="px-6 py-4">
+              <div class="flex items-center gap-3">
+                ${actionBadge}
+                <span class="text-sm text-slate-600">${log.detail}</span>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Render pagination
+      let pageButtons = '';
+      for (let i = 1; i <= totalPages; i++) {
+        const active = i === currentPage
+          ? 'bg-cyan-500 text-white shadow-sm'
+          : 'bg-white text-slate-700 hover:bg-slate-100';
+        pageButtons += `<button onclick="goToPage(${i})" class="h-9 w-9 rounded-lg text-xs font-bold ${active} border border-slate-200 transition">${i}</button>`;
+      }
+
+      paginationEl.innerHTML = `
+        <p class="text-xs text-slate-500">Showing <span class="font-bold text-slate-700">${start + 1}–${Math.min(end, filtered.length)}</span> of <span class="font-bold text-slate-700">${filtered.length}</span> entries</p>
+        <div class="flex items-center gap-1">
+          <button onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} class="h-9 px-3 rounded-lg text-xs font-bold border border-slate-200 transition ${currentPage === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-100'}">← Prev</button>
+          ${pageButtons}
+          <button onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} class="h-9 px-3 rounded-lg text-xs font-bold border border-slate-200 transition ${currentPage === totalPages ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-100'}">Next →</button>
+        </div>
+      `;
+    }
+
+    function goToPage(page) {
+      if (page < 1) return;
+      triggerFilterWithPage(page);
+    }
+
+    function triggerFilter() {
+      currentPage = 1;
+      renderLogs(
+        document.getElementById('filterAction').value,
+        document.getElementById('searchInput').value,
+        document.getElementById('filterBus').value,
+        1
+      );
+    }
+
+    function triggerFilterWithPage(page) {
+      renderLogs(
+        document.getElementById('filterAction').value,
+        document.getElementById('searchInput').value,
+        document.getElementById('filterBus').value,
+        page
+      );
+    }
+
+    // ─── Event Listeners ───
+    document.getElementById('searchInput').addEventListener('input', triggerFilter);
+    document.getElementById('filterAction').addEventListener('change', triggerFilter);
+    document.getElementById('filterBus').addEventListener('change', triggerFilter);
+
+    // ─── Populate route dropdown ───
+    function populateBusFilter() {
+      const routes = [...new Set(auditLogs.map(l => l.route))].sort();
+      const select = document.getElementById('filterBus');
+      routes.forEach(route => {
+        const opt = document.createElement('option');
+        opt.value = route;
+        opt.textContent = route;
+        select.appendChild(opt);
+      });
+    }
+
+    // ─── Init ───
+    window.addEventListener('DOMContentLoaded', () => {
+      const session = sessionStorage.getItem('dc-bus-superadmin-session');
+      if (session) {
+        const data = JSON.parse(session);
+        document.getElementById('adminUsername').textContent = data.username || 'Super Admin';
+      }
+      populateBusFilter();
+      renderSummary();
+      renderLogs();
+    });
+
+    // Logout
+    function handleLogout() {
+      document.getElementById('logoutModal').classList.remove('hidden');
+    }
+    function closeLogoutModal() {
+      document.getElementById('logoutModal').classList.add('hidden');
+    }
+    function confirmLogout() {
+      sessionStorage.removeItem('dc-bus-superadmin-session');
+      window.location.href = '../login-superadmin.html';
+    }
+  </script>
+
+  <!-- Logout Confirmation Modal -->
+  <div id="logoutModal" class="hidden fixed inset-0 z-[999] flex items-center justify-center">
+    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeLogoutModal()"></div>
+    <div class="relative w-full max-w-sm mx-4 bg-white rounded-2xl shadow-xl p-6 text-center">
+      <div class="mx-auto mb-4 h-12 w-12 rounded-full bg-rose-100 flex items-center justify-center">
+        <svg class="w-6 h-6 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        </svg>
+      </div>
+      <h3 class="text-lg font-bold text-slate-900 mb-1">Logout</h3>
+      <p class="text-sm text-slate-500 mb-6">Are you sure you want to logout from the admin panel?</p>
+      <div class="flex items-center gap-3">
+        <button onclick="closeLogoutModal()"
+          class="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Cancel</button>
+        <button onclick="confirmLogout()"
+          class="flex-1 rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-rose-700">Logout</button>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>
