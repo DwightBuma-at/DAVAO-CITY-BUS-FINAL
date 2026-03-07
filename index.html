@@ -1318,9 +1318,13 @@
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
       crossorigin=""
     ></script>
+    <script src="assets/road-routing.js"></script>
+    <script src="assets/route-status-sync.js"></script>
     <script>
       const routeModal = document.getElementById('routeModal');
       const closeModalBtn = document.getElementById('closeModal');
+      const modalStatus = document.getElementById('modalStatus');
+      const roadRouting = window.dcBusRoadRouting;
       const r102RouteToggleSection = document.getElementById('r102RouteToggleSection');
       const r102AmToggle = document.getElementById('r102AmToggle');
       const r102PmToggle = document.getElementById('r102PmToggle');
@@ -1380,6 +1384,51 @@
       let activeR763Period = 'AM';
       let activeR783Period = 'AM';
       let activeR793Period = 'AM';
+      let liveMapRenderToken = 0;
+
+      const onRouteBadgeClasses = ['bg-emerald-100', 'text-emerald-700'];
+      const offRouteBadgeClasses = ['bg-slate-200', 'text-slate-700'];
+
+      function getRouteOperationalState(routeId) {
+        if (!window.dcBusStatusSync) {
+          return {
+            onRoute: true,
+            label: 'On-Route'
+          };
+        }
+
+        return window.dcBusStatusSync.getDisplayState(routeId);
+      }
+
+      function applyModalOperationalState(routeId) {
+        const routeState = getRouteOperationalState(routeId);
+        modalStatus.textContent = routeState.label;
+        modalStatus.classList.remove('text-slate-900', 'text-emerald-600', 'text-rose-600');
+        modalStatus.classList.add(routeState.onRoute ? 'text-emerald-600' : 'text-rose-600');
+      }
+
+      function applyPassengerCardOperationalState(article) {
+        const statusBadge = article.querySelector('div.mb-5.flex.flex-wrap.items-center.justify-between > span.rounded-full');
+
+        if (!statusBadge) {
+          return;
+        }
+
+        const routeState = getRouteOperationalState(article.dataset.route);
+        statusBadge.textContent = routeState.label;
+        statusBadge.classList.remove(...onRouteBadgeClasses, ...offRouteBadgeClasses);
+        statusBadge.classList.add(...(routeState.onRoute ? onRouteBadgeClasses : offRouteBadgeClasses));
+      }
+
+      function syncPassengerOperationalState() {
+        document.querySelectorAll('article[data-route]').forEach((article) => {
+          applyPassengerCardOperationalState(article);
+        });
+
+        if (activeRouteId) {
+          applyModalOperationalState(activeRouteId);
+        }
+      }
 
       const davaoCityCenter = [7.0731, 125.6128];
       const locationCoordinates = {
@@ -1596,14 +1645,14 @@
         }
       }
 
-      function updateRouteMap(routeId, routeInfo, period) {
+      async function updateRouteMap(routeId, routeInfo, period) {
         initializeLiveMap();
 
         if (!liveMap) {
           return;
         }
 
-        clearLiveRouteLayers();
+        const renderToken = ++liveMapRenderToken;
 
         const markers = L.layerGroup();
         let pathPoints = [];
@@ -1806,8 +1855,18 @@
           && selectedStops.length > 0
           && selectedStopCoordinates;
 
-        if (pathPoints.length > 1) {
-          liveRouteLayer = L.polyline(pathPoints, {
+        const routedPath = roadRouting && pathPoints.length > 1
+          ? await roadRouting.getRoadPath(pathPoints)
+          : pathPoints;
+
+        if (renderToken !== liveMapRenderToken) {
+          return;
+        }
+
+        clearLiveRouteLayers();
+
+        if (routedPath.length > 1) {
+          liveRouteLayer = L.polyline(routedPath, {
             color: routeTheme.lineColor,
             weight: 4,
             opacity: 0.95
@@ -1889,7 +1948,7 @@
             }).addTo(markers).bindTooltip(`End: ${endLabel}`);
           }
 
-          liveMap.fitBounds(L.latLngBounds(pathPoints), {
+          liveMap.fitBounds(L.latLngBounds(routedPath), {
             padding: [24, 24],
             maxZoom: 13
           });
@@ -2737,7 +2796,7 @@
             activeRouteId = routeId;
             activeRouteData = data;
             document.getElementById('modalRouteName').textContent = data.name;
-            document.getElementById('modalStatus').textContent = 'On-Route';
+            applyModalOperationalState(routeId);
             document.getElementById('modalPassengerLoadValue').textContent = data.status;
 
             if (routeId === 'R102') {
@@ -2899,6 +2958,24 @@
           routeModal.classList.add('hidden');
         }
       });
+
+      if (window.dcBusStatusSync) {
+        window.dcBusStatusSync.subscribe(() => {
+          syncPassengerOperationalState();
+        });
+      }
+
+      window.addEventListener('focus', () => {
+        syncPassengerOperationalState();
+      });
+
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+          syncPassengerOperationalState();
+        }
+      });
+
+      syncPassengerOperationalState();
     </script>
   </body>
 </html>

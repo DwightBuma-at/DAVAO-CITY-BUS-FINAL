@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DC Bus Operator Access</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        font-family: "Manrope", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(6, 182, 212, 0.12), transparent 32%),
+          radial-gradient(circle at top right, rgba(15, 23, 42, 0.08), transparent 28%),
+          #f8fafc;
+      }
+
+      .panel-shadow {
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+      }
+    </style>
+  </head>
+  <body class="min-h-screen text-slate-900">
+    <div class="min-h-screen bg-gradient-to-b from-cyan-50 via-white to-slate-50">
+      <header class="fixed left-0 right-0 top-0 z-50 border-b border-slate-200 bg-white shadow-sm">
+        <div class="mx-auto flex h-24 w-full max-w-7xl items-center px-4 sm:px-6 lg:px-8">
+          <a href="#" class="inline-flex shrink-0 items-center">
+            <img src="assets/dcbuslogo.png" alt="DC Bus logo" class="h-14 w-auto sm:h-16" />
+          </a>
+        </div>
+      </header>
+
+      <main class="mx-auto w-full max-w-7xl px-4 pb-12 pt-28 sm:px-6 lg:px-8">
+        <section class="mb-6 rounded-3xl border border-slate-200 bg-white p-6 panel-shadow sm:p-8">
+          <div class="mx-auto max-w-5xl rounded-xl border border-cyan-300 bg-cyan-50/50 p-3 text-left text-[13px] leading-relaxed text-slate-800 sm:p-4 sm:text-sm">
+            <div class="flex items-start gap-3">
+              <span class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center text-slate-700" aria-hidden="true">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="9" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8h.01M11 12h2v4h-2" />
+                </svg>
+              </span>
+              <div>
+                <p class="font-bold">Operator View</p>
+                <p>
+                  Select a bus below, enter your <span class="font-semibold">Bus ID</span> and <span class="font-semibold">Bus Code</span>, then continue to the bus dashboard to manage its live On-Route status.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div id="operatorAlert" class="mx-auto mt-4 hidden max-w-5xl rounded-2xl border px-4 py-3 text-sm font-semibold"></div>
+
+          <div class="mt-6 grid gap-4 md:grid-cols-3">
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Available Buses</p>
+              <p id="fleetCount" class="mt-2 text-3xl font-extrabold text-slate-900">0</p>
+              <p class="mt-1 text-sm text-slate-600">All route buses listed from the passenger view.</p>
+            </div>
+
+            <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Buses On-Route</p>
+              <p id="onRouteCount" class="mt-2 text-3xl font-extrabold text-emerald-700">0</p>
+              <p class="mt-1 text-sm text-emerald-700/80">Routes currently visible as active.</p>
+            </div>
+
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Buses Off-Route</p>
+              <p id="offRouteCount" class="mt-2 text-3xl font-extrabold text-slate-900">0</p>
+              <p class="mt-1 text-sm text-slate-600">Routes waiting for operator login.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="busDashboard" class="grid gap-6 lg:grid-cols-2"></section>
+      </main>
+    </div>
+
+    <div id="busLoginModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 backdrop-blur-sm p-4">
+      <div class="w-full max-w-md rounded-3xl border border-slate-200 bg-white shadow-2xl">
+        <div class="flex items-start justify-between gap-4 border-b border-slate-200 p-6 pb-4">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Bus Login</p>
+            <h2 id="busLoginTitle" class="mt-2 text-2xl font-extrabold text-slate-900"></h2>
+          </div>
+
+          <button id="closeBusLoginModal" type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-100">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form id="busLoginForm" class="space-y-4 p-6">
+          <div>
+            <label for="busIdInput" class="mb-2 block text-sm font-bold text-slate-800">Bus ID</label>
+            <input
+              id="busIdInput"
+              type="text"
+              autocomplete="off"
+              class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+              placeholder="Enter bus ID"
+            />
+          </div>
+
+          <div>
+            <label for="busCodeInput" class="mb-2 block text-sm font-bold text-slate-800">Bus Code</label>
+            <input
+              id="busCodeInput"
+              type="password"
+              autocomplete="off"
+              class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+              placeholder="Enter bus code"
+            />
+          </div>
+
+          <p id="busLoginError" class="hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700"></p>
+
+          <div class="flex items-center justify-end gap-3 pt-2">
+            <button type="submit" class="inline-flex items-center rounded-2xl bg-cyan-600 px-5 py-3 text-sm font-extrabold uppercase tracking-[0.18em] text-white transition hover:bg-cyan-700">
+              Enter Dashboard
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="assets/route-status-sync.js"></script>
+    <script>
+      const routeStore = window.dcBusStatusSync;
+      const OPERATOR_SESSION_KEY = 'dc-bus-operator-session-v1';
+
+      const busDashboard = document.getElementById('busDashboard');
+      const operatorAlert = document.getElementById('operatorAlert');
+      const fleetCount = document.getElementById('fleetCount');
+      const onRouteCount = document.getElementById('onRouteCount');
+      const offRouteCount = document.getElementById('offRouteCount');
+      const busLoginModal = document.getElementById('busLoginModal');
+      const closeBusLoginModal = document.getElementById('closeBusLoginModal');
+      const busLoginForm = document.getElementById('busLoginForm');
+      const busLoginTitle = document.getElementById('busLoginTitle');
+      const busIdInput = document.getElementById('busIdInput');
+      const busCodeInput = document.getElementById('busCodeInput');
+      const busLoginError = document.getElementById('busLoginError');
+
+      let selectedRouteId = null;
+
+      function setAlert(message, tone) {
+        if (!message) {
+          operatorAlert.textContent = '';
+          operatorAlert.className = 'mx-auto mt-4 hidden max-w-5xl rounded-2xl border px-4 py-3 text-sm font-semibold';
+          return;
+        }
+
+        const toneClasses = {
+          success: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+          error: 'border-rose-200 bg-rose-50 text-rose-700',
+          info: 'border-cyan-200 bg-cyan-50 text-cyan-700'
+        };
+
+        operatorAlert.textContent = message;
+        operatorAlert.className = `mx-auto mt-4 max-w-5xl rounded-2xl border px-4 py-3 text-sm font-semibold ${toneClasses[tone] || toneClasses.info}`;
+      }
+
+      function formatTimestamp(value) {
+        if (!value) {
+          return 'No live update yet';
+        }
+
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+          return 'No live update yet';
+        }
+
+        return date.toLocaleString([], {
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit'
+        });
+      }
+
+      function getActiveRouteCount() {
+        const state = routeStore.readState();
+        return Object.values(state).filter((route) => route.onRoute).length;
+      }
+
+      function updateOverview() {
+        const activeCount = getActiveRouteCount();
+        fleetCount.textContent = String(routeStore.routes.length);
+        onRouteCount.textContent = String(activeCount);
+        offRouteCount.textContent = String(routeStore.routes.length - activeCount);
+      }
+
+      function openLoginModal(routeId) {
+        const routeMeta = routeStore.getRouteMeta(routeId);
+        if (!routeMeta) {
+          setAlert('That bus could not be opened.', 'error');
+          return;
+        }
+
+        selectedRouteId = routeId;
+        busLoginTitle.textContent = routeMeta.name;
+        busIdInput.value = '';
+        busCodeInput.value = '';
+        busLoginError.textContent = '';
+        busLoginError.classList.add('hidden');
+        busLoginModal.classList.remove('hidden');
+        busIdInput.focus();
+      }
+
+      function closeLoginModal() {
+        selectedRouteId = null;
+        busLoginError.textContent = '';
+        busLoginError.classList.add('hidden');
+        busLoginModal.classList.add('hidden');
+      }
+
+      function renderDashboard() {
+        const state = routeStore.readState();
+
+        busDashboard.innerHTML = routeStore.routes
+          .map((route) => {
+            const runtime = state[route.id] || routeStore.getDisplayState(route.id);
+            const isOnRoute = Boolean(runtime.onRoute);
+            const statusClasses = isOnRoute
+              ? 'bg-emerald-100 text-emerald-700'
+              : 'bg-slate-200 text-slate-700';
+
+            return `
+              <article class="overflow-hidden rounded-3xl border border-slate-200 bg-white panel-shadow">
+                <div class="p-5 text-white" style="background:${route.color};">
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="inline-flex items-center gap-3">
+                      <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/90 px-2 text-xs font-extrabold" style="color:${route.color};">
+                        ${route.id}
+                      </span>
+                      <div>
+                        <h2 class="text-lg font-extrabold sm:text-xl">${route.name}</h2>
+                        <p class="text-xs font-semibold uppercase tracking-[0.25em] text-white/75">Bus Access</p>
+                      </div>
+                    </div>
+
+                    <span class="rounded-full px-4 py-1.5 text-xs font-bold ${statusClasses}">
+                      ${isOnRoute ? 'On-Route' : 'Off-Route'}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="p-5">
+                  <div class="grid gap-3 sm:grid-cols-2">
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Current Status</p>
+                      <p class="mt-2 text-sm font-bold text-slate-900">${isOnRoute ? 'Bus is currently active' : 'Bus is currently inactive'}</p>
+                      <p class="mt-1 text-xs text-slate-600">Shared with the passenger page status badge.</p>
+                    </div>
+
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Last Sync</p>
+                      <p class="mt-2 text-sm font-bold text-slate-900">${formatTimestamp(runtime.lastUpdated)}</p>
+                      <p class="mt-1 text-xs text-slate-600">Latest live update for this route.</p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    data-route-enter="${route.id}"
+                    class="mt-4 inline-flex w-full items-center justify-center rounded-2xl border px-4 py-3 text-sm font-extrabold uppercase tracking-[0.18em] transition hover:opacity-90"
+                    style="background:${route.soft};color:${route.color};border-color:${route.border};"
+                  >
+                    Enter This Bus
+                  </button>
+                </div>
+              </article>
+            `;
+          })
+          .join('');
+
+        busDashboard.querySelectorAll('[data-route-enter]').forEach((button) => {
+          button.addEventListener('click', () => {
+            openLoginModal(button.dataset.routeEnter);
+          });
+        });
+      }
+
+      closeBusLoginModal.addEventListener('click', closeLoginModal);
+
+      busLoginForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+
+        const busId = busIdInput.value.trim();
+        const busCode = busCodeInput.value.trim();
+
+        if (!selectedRouteId) {
+          busLoginError.textContent = 'Select a bus first.';
+          busLoginError.classList.remove('hidden');
+          return;
+        }
+
+        if (!busId || !busCode) {
+          busLoginError.textContent = 'Bus ID and Bus Code are both required.';
+          busLoginError.classList.remove('hidden');
+          return;
+        }
+
+        sessionStorage.setItem(
+          OPERATOR_SESSION_KEY,
+          JSON.stringify({
+            routeId: selectedRouteId,
+            busId,
+            busCode,
+            loginAt: new Date().toISOString()
+          })
+        );
+
+        window.location.href = 'bus-dashboard.html';
+      });
+
+      routeStore.subscribe(() => {
+        updateOverview();
+        renderDashboard();
+      });
+
+      window.addEventListener('focus', () => {
+        updateOverview();
+        renderDashboard();
+      });
+
+      updateOverview();
+      renderDashboard();
+      setAlert('', 'info');
+    </script>
+  </body>
+</html>

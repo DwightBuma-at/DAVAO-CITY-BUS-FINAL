@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>DC Bus Live Dashboard</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+			rel="stylesheet"
+		/>
+		<script src="https://cdn.tailwindcss.com"></script>
+		<link
+			rel="stylesheet"
+			href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+			integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+			crossorigin=""
+		/>
+		<style>
+			body {
+				font-family: "Manrope", sans-serif;
+				background:
+					radial-gradient(circle at top left, rgba(6, 182, 212, 0.12), transparent 32%),
+					radial-gradient(circle at top right, rgba(15, 23, 42, 0.08), transparent 28%),
+					#f8fafc;
+			}
+
+			.panel-shadow {
+				box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+			}
+
+			#dashboardRouteMap {
+				height: 22rem;
+				border-radius: 1rem;
+				border: 1px solid #cbd5e1;
+				overflow: hidden;
+			}
+
+			#dashboardRouteMap .leaflet-control-zoom a {
+				color: #0f172a;
+			}
+
+			.dashboard-waypoint-pin {
+				height: 1.35rem;
+				width: 1.35rem;
+				border-radius: 9999px;
+				border: 2px solid #ffffff;
+				box-shadow: 0 5px 12px rgba(2, 6, 23, 0.2);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 0.68rem;
+				font-weight: 800;
+				color: #ffffff;
+			}
+
+			.dashboard-bus-pin {
+				height: 1.65rem;
+				width: 1.65rem;
+				border-radius: 9999px;
+				border: 2px solid #ffffff;
+				box-shadow: 0 8px 16px rgba(2, 6, 23, 0.3);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 0.68rem;
+				font-weight: 900;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: #ffffff;
+			}
+
+			.dashboard-route-stops-grid {
+				display: grid;
+				gap: 0.5rem;
+			}
+
+			@media (min-width: 640px) {
+				.dashboard-route-stops-grid {
+					grid-auto-flow: column;
+					grid-auto-columns: minmax(12rem, 1fr);
+					grid-template-rows: repeat(5, minmax(0, auto));
+				}
+			}
+		</style>
+	</head>
+	<body class="min-h-screen text-slate-900">
+		<div class="min-h-screen bg-gradient-to-b from-cyan-50 via-white to-slate-50">
+			<header class="fixed left-0 right-0 top-0 z-50 border-b border-slate-200 bg-white shadow-sm">
+				<div class="mx-auto flex h-24 w-full max-w-7xl items-center px-4 sm:px-6 lg:px-8">
+					<a href="bus.html" class="inline-flex shrink-0 items-center">
+						<img src="assets/dcbuslogo.png" alt="DC Bus logo" class="h-14 w-auto sm:h-16" />
+					</a>
+				</div>
+			</header>
+
+			<main class="mx-auto w-full max-w-5xl px-4 pb-12 pt-28 sm:px-6 lg:px-8">
+				<section id="dashboardShell" class="space-y-6"></section>
+			</main>
+		</div>
+
+		<script src="assets/route-status-sync.js"></script>
+		<script
+			src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+			integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+			crossorigin=""
+		></script>
+		<script src="assets/road-routing.js"></script>
+		<script src="assets/route-map-data.js"></script>
+		<script>
+			const routeStore = window.dcBusStatusSync;
+			const roadRouting = window.dcBusRoadRouting;
+			const OPERATOR_SESSION_KEY = 'dc-bus-operator-session-v1';
+			const dashboardShell = document.getElementById('dashboardShell');
+
+			let latestCoords = null;
+			let locationPermissionState = 'checking';
+			let locationWatchId = null;
+			let permissionStatusHandle = null;
+
+			function readOperatorSession() {
+				try {
+					return JSON.parse(sessionStorage.getItem(OPERATOR_SESSION_KEY) || 'null');
+				} catch (error) {
+					return null;
+				}
+			}
+
+			const operatorSession = readOperatorSession();
+			const routeMeta = operatorSession && routeStore ? routeStore.getRouteMeta(operatorSession.routeId) : null;
+			const routeMapData = window.dcBusRouteMapData || { defaultCenter: [7.0731, 125.6128], detailedRoutes: {}, stopCoordinates: {} };
+
+			let dashboardMap = null;
+			let dashboardPolylineLayer = null;
+			let dashboardMarkerLayer = null;
+			let activeMapPeriod = 'AM';
+			let dashboardRenderToken = 0;
+			let routeActivationResolver = null;
+			let routeActivationAction = 'on';
+			let isTurningOnRoute = false;
+
+			function formatTimestamp(value) {
+				if (!value) {
+					return 'No live update yet';
+				}
+
+				const date = new Date(value);
+				if (Number.isNaN(date.getTime())) {
+					return 'No live update yet';
+				}
+
+				return date.toLocaleString([], {
+					month: 'short',
+					day: 'numeric',
+					hour: 'numeric',
+					minute: '2-digit'
+				});
+			}
+
+			function formatCoords(coords) {
+				if (!coords) {
+					return 'No GPS fix yet';
+				}
+
+				return `${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`;
+			}
+
+			function clearOperatorSession() {
+				sessionStorage.removeItem(OPERATOR_SESSION_KEY);
+			}
+
+			function renderMissingSession() {
+				dashboardShell.innerHTML = `
+					<section class="rounded-3xl border border-slate-200 bg-white p-8 text-center panel-shadow">
+						<p class="text-sm font-semibold uppercase tracking-[0.25em] text-slate-500">Bus Dashboard</p>
+						<h1 class="mt-3 text-3xl font-extrabold text-slate-900">No bus selected</h1>
+						<p class="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
+							Go back to the bus list, choose a route, and log in with the Bus ID and Bus Code first.
+						</p>
+						<a href="bus.html" class="mt-6 inline-flex items-center rounded-2xl bg-cyan-600 px-5 py-3 text-sm font-extrabold uppercase tracking-[0.18em] text-white transition hover:bg-cyan-700">
+							Back to Bus List
+						</a>
+					</section>
+				`;
+			}
+
+			function renderDashboardShell() {
+				dashboardShell.innerHTML = `
+					<div id="dashboardAlert" class="hidden rounded-2xl border px-4 py-3 text-sm font-semibold panel-shadow"></div>
+
+					<article class="overflow-hidden rounded-3xl border border-slate-200 bg-white panel-shadow">
+						<div class="p-6 text-white" style="background:${routeMeta.color};">
+							<div class="flex flex-wrap items-center justify-between gap-3">
+								<div class="inline-flex items-center gap-3">
+									<span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white/90 px-2 text-xs font-extrabold" style="color:${routeMeta.color};">
+										${routeMeta.id}
+									</span>
+									<div>
+										<p class="text-xs font-semibold uppercase tracking-[0.25em] text-white/75">Selected Bus</p>
+										<h1 class="text-2xl font-extrabold sm:text-3xl">${routeMeta.name}</h1>
+									</div>
+								</div>
+
+								<span id="dashboardStatusBadge" class="rounded-full bg-white/90 px-4 py-1.5 text-xs font-bold text-slate-900">Status</span>
+							</div>
+						</div>
+
+						<div class="p-6">
+							<div class="grid gap-4 md:grid-cols-3">
+								<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+									<p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Bus ID</p>
+									<p id="dashboardBusId" class="mt-2 text-lg font-extrabold text-slate-900"></p>
+									<p class="mt-1 text-xs text-slate-600">Logged-in bus operator session.</p>
+								</div>
+
+								<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+									<p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Location</p>
+									<p id="dashboardLocationState" class="mt-2 text-lg font-extrabold text-slate-900"></p>
+									<p id="dashboardLocationHint" class="mt-1 text-xs text-slate-600"></p>
+								</div>
+
+								<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+									<p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Last Sync</p>
+									<p id="dashboardLastSync" class="mt-2 text-lg font-extrabold text-slate-900"></p>
+									<p class="mt-1 text-xs text-slate-600">Latest route status update.</p>
+								</div>
+							</div>
+
+							<div class="mt-6 flex flex-col gap-3 lg:flex-row lg:items-stretch lg:justify-between">
+								<div class="rounded-2xl border border-cyan-300 bg-cyan-50/50 p-4 text-left text-[13px] leading-relaxed text-slate-800 sm:text-sm lg:flex-1 lg:max-w-2xl">
+									<div class="flex items-start gap-3">
+										<span class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center text-slate-700" aria-hidden="true">
+											<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+												<circle cx="12" cy="12" r="9" />
+												<path stroke-linecap="round" stroke-linejoin="round" d="M12 8h.01M11 12h2v4h-2" />
+											</svg>
+										</span>
+										<div>
+											<p class="font-bold">Bus Dashboard</p>
+											<p>
+												Turn location on, then use the button beside this card to set this bus to <span class="font-semibold">On-Route</span>. The passenger page reads the same status live from this bus.
+											</p>
+										</div>
+									</div>
+								</div>
+
+								<button id="dashboardActionButton" type="button" class="inline-flex w-full items-center justify-center rounded-2xl border px-5 py-3 text-sm font-extrabold uppercase tracking-[0.18em] transition hover:opacity-90 lg:w-auto lg:min-w-64">
+									Toggle Route
+								</button>
+							</div>
+
+							<section class="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+								<div class="flex flex-wrap items-center justify-between gap-3">
+									<div>
+										<p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Route Map</p>
+										<p id="dashboardRouteTitle" class="mt-1 text-sm font-bold text-slate-800"></p>
+									</div>
+									<div class="inline-flex rounded-xl border border-slate-300 bg-white p-1">
+										<button id="mapAmToggle" type="button" class="rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] transition">AM</button>
+										<button id="mapPmToggle" type="button" class="rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] transition">PM</button>
+									</div>
+								</div>
+
+								<div id="dashboardRouteMap" class="mt-4"></div>
+								<ol id="dashboardRouteStops" class="dashboard-route-stops-grid mt-4 text-xs text-slate-700"></ol>
+							</section>
+						</div>
+					</article>
+
+					<div id="routeActivationModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/45 p-4">
+						<div class="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl">
+							<p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Confirmation</p>
+							<h2 id="routeActivationTitle" class="mt-2 text-xl font-extrabold text-slate-900">Turn ${routeMeta.id} On-Route?</h2>
+							<p id="routeActivationMessage" class="mt-2 text-sm text-slate-600">This bus will be shown as active to passengers.</p>
+
+							<div class="mt-5 flex justify-end gap-3">
+								<button id="routeActivationCancel" type="button" class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
+									Cancel
+								</button>
+								<button id="routeActivationConfirm" type="button" class="rounded-xl px-4 py-2 text-sm font-extrabold uppercase tracking-[0.14em] text-white transition hover:opacity-90" style="background:#16a34a;">
+									Confirm
+								</button>
+							</div>
+						</div>
+					</div>
+				`;
+			}
+
+			function getDashboardAlert() {
+				return document.getElementById('dashboardAlert');
+			}
+
+			function getRouteActivationModalElements() {
+				return {
+					modal: document.getElementById('routeActivationModal'),
+					title: document.getElementById('routeActivationTitle'),
+					message: document.getElementById('routeActivationMessage'),
+					cancelButton: document.getElementById('routeActivationCancel'),
+					confirmButton: document.getElementById('routeActivationConfirm')
+				};
+			}
+
+			function resolveRouteActivation(confirmed) {
+				const modalElements = getRouteActivationModalElements();
+
+				if (modalElements.modal) {
+					modalElements.modal.classList.add('hidden');
+					modalElements.modal.classList.remove('flex');
+				}
+
+				document.body.classList.remove('overflow-hidden');
+
+				if (typeof routeActivationResolver === 'function') {
+					routeActivationResolver(Boolean(confirmed));
+				}
+
+				routeActivationResolver = null;
+			}
+
+			function requestRouteActivationConfirmation(action = 'on') {
+				const modalElements = getRouteActivationModalElements();
+
+				if (!modalElements.modal) {
+					return Promise.resolve(false);
+				}
+
+				if (routeActivationResolver) {
+					return Promise.resolve(false);
+				}
+
+				routeActivationAction = action === 'off' ? 'off' : 'on';
+
+				if (modalElements.title) {
+					modalElements.title.textContent = routeActivationAction === 'off'
+						? `Turn ${routeMeta.id} Off-Route?`
+						: `Turn ${routeMeta.id} On-Route?`;
+				}
+
+				if (modalElements.message) {
+					modalElements.message.textContent = routeActivationAction === 'off'
+						? 'Passengers will see this bus as inactive until you turn it on again.'
+						: 'This bus will be shown as active to passengers.';
+				}
+
+				if (modalElements.confirmButton) {
+					modalElements.confirmButton.textContent = routeActivationAction === 'off'
+						? 'Confirm Turn Off'
+						: 'Confirm Turn On';
+					modalElements.confirmButton.style.background = routeActivationAction === 'off' ? '#dc2626' : '#16a34a';
+				}
+
+				modalElements.modal.classList.remove('hidden');
+				modalElements.modal.classList.add('flex');
+				document.body.classList.add('overflow-hidden');
+
+				return new Promise((resolve) => {
+					routeActivationResolver = resolve;
+				});
+			}
+
+			function setAlert(message, tone) {
+				const dashboardAlert = getDashboardAlert();
+				if (!dashboardAlert) {
+					return;
+				}
+
+				if (!message) {
+					dashboardAlert.textContent = '';
+					dashboardAlert.className = 'mt-4 hidden rounded-2xl border px-4 py-3 text-sm font-semibold';
+					return;
+				}
+
+				const toneClasses = {
+					success: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+					error: 'border-rose-200 bg-rose-50 text-rose-700',
+					info: 'border-cyan-200 bg-cyan-50 text-cyan-700'
+				};
+
+				dashboardAlert.textContent = message;
+				dashboardAlert.className = `mt-4 rounded-2xl border px-4 py-3 text-sm font-semibold ${toneClasses[tone] || toneClasses.info}`;
+			}
+
+			function getMapPeriodButtons() {
+				return {
+					am: document.getElementById('mapAmToggle'),
+					pm: document.getElementById('mapPmToggle')
+				};
+			}
+
+			function setMapPeriodToggleState(period) {
+				const mapButtons = getMapPeriodButtons();
+				if (!mapButtons.am || !mapButtons.pm || !routeMeta) {
+					return;
+				}
+
+				const isAmActive = period === 'AM';
+				mapButtons.am.className = isAmActive
+					? 'rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-white'
+					: 'rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-slate-600 hover:bg-slate-100';
+				mapButtons.pm.className = !isAmActive
+					? 'rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-white'
+					: 'rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-slate-600 hover:bg-slate-100';
+				mapButtons.am.style.background = isAmActive ? routeMeta.color : '';
+			}
+
+			function ensureDashboardMap() {
+				if (dashboardMap || !window.L) {
+					return dashboardMap;
+				}
+
+				const mapContainer = document.getElementById('dashboardRouteMap');
+				if (!mapContainer) {
+					return null;
+				}
+
+				dashboardMap = L.map('dashboardRouteMap', {
+					zoomControl: true,
+					scrollWheelZoom: false
+				}).setView(routeMapData.defaultCenter, 12);
+
+				L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+					attribution: '&copy; OpenStreetMap contributors',
+					maxZoom: 19
+				}).addTo(dashboardMap);
+
+				return dashboardMap;
+			}
+
+			function clearDashboardMapLayers() {
+				if (!dashboardMap) {
+					return;
+				}
+
+				if (dashboardPolylineLayer) {
+					dashboardMap.removeLayer(dashboardPolylineLayer);
+					dashboardPolylineLayer = null;
+				}
+
+				if (dashboardMarkerLayer) {
+					dashboardMap.removeLayer(dashboardMarkerLayer);
+					dashboardMarkerLayer = null;
+				}
+			}
+
+			function buildWaypointIcon(index) {
+				if (!routeMeta) {
+					return null;
+				}
+
+				return L.divIcon({
+					className: '',
+					html: `<div class="dashboard-waypoint-pin" style="background:${routeMeta.color};">${index + 1}</div>`,
+					iconSize: [22, 22],
+					iconAnchor: [11, 11]
+				});
+			}
+
+			function buildBusIcon() {
+				if (!routeMeta) {
+					return null;
+				}
+
+				return L.divIcon({
+					className: '',
+					html: `<div class="dashboard-bus-pin" style="background:${routeMeta.color};">bus</div>`,
+					iconSize: [27, 27],
+					iconAnchor: [13, 13]
+				});
+			}
+
+			async function renderSelectedRouteMap(period = activeMapPeriod) {
+				if (!routeMeta) {
+					return;
+				}
+
+				const renderToken = ++dashboardRenderToken;
+
+				const routePeriods = routeMapData.detailedRoutes[routeMeta.id];
+				if (!routePeriods) {
+					return;
+				}
+
+				const selectedPeriod = routePeriods[period] ? period : 'AM';
+				activeMapPeriod = selectedPeriod;
+
+				const periodData = routePeriods[selectedPeriod];
+				const routeTitle = document.getElementById('dashboardRouteTitle');
+				const routeStops = document.getElementById('dashboardRouteStops');
+
+				if (routeTitle) {
+					routeTitle.textContent = periodData.title;
+				}
+
+				if (routeStops) {
+					routeStops.innerHTML = periodData.stops
+						.map(
+							(stopName, index) =>
+								`<li class="rounded-xl border border-slate-200 bg-white px-3 py-2"><span class="font-bold text-slate-900">${index + 1}.</span> ${stopName}</li>`
+						)
+						.join('');
+				}
+
+				setMapPeriodToggleState(selectedPeriod);
+
+				const map = ensureDashboardMap();
+				if (!map) {
+					return;
+				}
+
+				const coordinateTable = routeMapData.stopCoordinates[routeMeta.id] || {};
+				const polylinePoints = periodData.stops
+					.map((stopName) => coordinateTable[stopName])
+					.filter((coords) => Array.isArray(coords) && coords.length === 2);
+				const routedPath = roadRouting && polylinePoints.length >= 2
+					? await roadRouting.getRoadPath(polylinePoints)
+					: polylinePoints;
+
+				if (renderToken !== dashboardRenderToken) {
+					return;
+				}
+
+				clearDashboardMapLayers();
+
+				if (routedPath.length >= 2) {
+					dashboardPolylineLayer = L.polyline(routedPath, {
+						color: routeMeta.color,
+						weight: 6,
+						opacity: 0.82,
+						smoothFactor: 1
+					}).addTo(map);
+				}
+
+				const markerLayer = L.layerGroup();
+				polylinePoints.forEach((coords, index) => {
+					L.marker(coords, { icon: buildWaypointIcon(index) })
+						.bindTooltip(periodData.stops[index], {
+							direction: 'top',
+							offset: [0, -10]
+						})
+						.addTo(markerLayer);
+				});
+
+				const runtimeState = routeStore.getDisplayState(routeMeta.id);
+				const liveCoords = runtimeState.coords || latestCoords;
+				if (runtimeState.onRoute && liveCoords && Number.isFinite(liveCoords.lat) && Number.isFinite(liveCoords.lng)) {
+					L.marker([liveCoords.lat, liveCoords.lng], { icon: buildBusIcon() })
+						.bindTooltip(`Live ${routeMeta.id} bus`, {
+							direction: 'top',
+							offset: [0, -10]
+						})
+						.addTo(markerLayer);
+				}
+
+				dashboardMarkerLayer = markerLayer.addTo(map);
+
+				const boundsPath = routedPath.length >= 2 ? routedPath : polylinePoints;
+
+				if (boundsPath.length >= 2) {
+					map.fitBounds(boundsPath, {
+						padding: [26, 26],
+						maxZoom: 14
+					});
+				} else if (polylinePoints.length === 1) {
+					map.setView(polylinePoints[0], 14);
+				} else {
+					map.setView(routeMapData.defaultCenter, 12);
+				}
+
+				setTimeout(() => {
+					map.invalidateSize();
+				}, 0);
+			}
+
+			function updateDashboardUI() {
+				if (!routeMeta) {
+					return;
+				}
+
+				const runtime = routeStore.getDisplayState(routeMeta.id);
+				const isOnRoute = runtime.onRoute;
+				const dashboardStatusBadge = document.getElementById('dashboardStatusBadge');
+				const dashboardBusId = document.getElementById('dashboardBusId');
+				const dashboardLocationState = document.getElementById('dashboardLocationState');
+				const dashboardLocationHint = document.getElementById('dashboardLocationHint');
+				const dashboardLastSync = document.getElementById('dashboardLastSync');
+				const dashboardActionButton = document.getElementById('dashboardActionButton');
+
+				dashboardBusId.textContent = operatorSession.busId;
+				dashboardLastSync.textContent = formatTimestamp(runtime.lastUpdated);
+				dashboardStatusBadge.textContent = isOnRoute ? 'On-Route' : 'Off-Route';
+				dashboardStatusBadge.className = isOnRoute
+					? 'rounded-full bg-emerald-100 px-4 py-1.5 text-xs font-bold text-emerald-700'
+					: 'rounded-full bg-slate-200 px-4 py-1.5 text-xs font-bold text-slate-700';
+
+				if (locationPermissionState === 'granted') {
+					dashboardLocationState.textContent = isOnRoute ? 'Location Active' : 'Location Ready';
+					dashboardLocationState.className = `mt-2 text-lg font-extrabold ${isOnRoute ? 'text-emerald-700' : 'text-slate-900'}`;
+					dashboardLocationHint.textContent = `GPS: ${formatCoords(runtime.coords || latestCoords)}`;
+				} else if (locationPermissionState === 'denied') {
+					dashboardLocationState.textContent = 'Location Blocked';
+					dashboardLocationState.className = 'mt-2 text-lg font-extrabold text-rose-700';
+					dashboardLocationHint.textContent = 'Enable location access before turning this bus On-Route.';
+				} else if (locationPermissionState === 'prompt') {
+					dashboardLocationState.textContent = 'Permission Needed';
+					dashboardLocationState.className = 'mt-2 text-lg font-extrabold text-amber-600';
+					dashboardLocationHint.textContent = 'The browser will ask for location access when you turn this bus on.';
+				} else if (locationPermissionState === 'unsupported') {
+					dashboardLocationState.textContent = 'Location Unsupported';
+					dashboardLocationState.className = 'mt-2 text-lg font-extrabold text-slate-700';
+					dashboardLocationHint.textContent = 'This browser cannot provide location access.';
+				} else {
+					dashboardLocationState.textContent = 'Checking...';
+					dashboardLocationState.className = 'mt-2 text-lg font-extrabold text-slate-900';
+					dashboardLocationHint.textContent = 'Checking location permission.';
+				}
+
+				dashboardActionButton.textContent = isTurningOnRoute && !isOnRoute
+					? 'Turning On...'
+					: (isOnRoute ? 'Turn Off On-Route' : 'Turn On On-Route');
+				dashboardActionButton.style.background = isOnRoute ? '#dc2626' : '#16a34a';
+				dashboardActionButton.style.color = '#ffffff';
+				dashboardActionButton.style.borderColor = isOnRoute ? '#991b1b' : '#15803d';
+				dashboardActionButton.disabled = isTurningOnRoute;
+				dashboardActionButton.classList.toggle('opacity-70', isTurningOnRoute);
+				dashboardActionButton.classList.toggle('cursor-wait', isTurningOnRoute);
+
+				renderSelectedRouteMap(activeMapPeriod);
+			}
+
+			function stopLocationWatch() {
+				if (locationWatchId === null || !navigator.geolocation) {
+					return;
+				}
+
+				navigator.geolocation.clearWatch(locationWatchId);
+				locationWatchId = null;
+			}
+
+			function startLocationWatch() {
+				if (locationWatchId !== null || !navigator.geolocation || !routeMeta) {
+					return;
+				}
+
+				locationWatchId = navigator.geolocation.watchPosition(
+					(position) => {
+						latestCoords = {
+							lat: position.coords.latitude,
+							lng: position.coords.longitude
+						};
+						routeStore.setRouteOnRoute(routeMeta.id, true, { coords: latestCoords });
+						updateDashboardUI();
+					},
+					() => {
+						routeStore.setRouteOnRoute(routeMeta.id, false);
+						latestCoords = null;
+						locationPermissionState = 'denied';
+						stopLocationWatch();
+						updateDashboardUI();
+						setAlert('Location access was turned off. This bus is now Off-Route.', 'error');
+					},
+					{
+						enableHighAccuracy: true,
+						maximumAge: 0,
+						timeout: 10000
+					}
+				);
+			}
+
+			function syncLocationWatch() {
+				if (!routeMeta) {
+					return;
+				}
+
+				if (routeStore.getDisplayState(routeMeta.id).onRoute) {
+					startLocationWatch();
+				} else {
+					stopLocationWatch();
+				}
+			}
+
+			async function watchLocationPermission() {
+				if (!navigator.geolocation) {
+					locationPermissionState = 'unsupported';
+					updateDashboardUI();
+					return;
+				}
+
+				if (!navigator.permissions || !navigator.permissions.query) {
+					locationPermissionState = 'prompt';
+					updateDashboardUI();
+					return;
+				}
+
+				try {
+					permissionStatusHandle = await navigator.permissions.query({ name: 'geolocation' });
+					locationPermissionState = permissionStatusHandle.state;
+					updateDashboardUI();
+
+					permissionStatusHandle.onchange = () => {
+						locationPermissionState = permissionStatusHandle.state;
+
+						if (locationPermissionState !== 'granted' && routeMeta) {
+							routeStore.setRouteOnRoute(routeMeta.id, false);
+							latestCoords = null;
+							syncLocationWatch();
+						}
+
+						updateDashboardUI();
+					};
+				} catch (error) {
+					locationPermissionState = 'prompt';
+					updateDashboardUI();
+				}
+			}
+
+			function enableRoute() {
+				if (!navigator.geolocation || !routeMeta) {
+					setAlert('Location access is not available on this device.', 'error');
+					return;
+				}
+
+				if (isTurningOnRoute) {
+					return;
+				}
+
+				isTurningOnRoute = true;
+				updateDashboardUI();
+
+				navigator.geolocation.getCurrentPosition(
+					(position) => {
+						isTurningOnRoute = false;
+						latestCoords = {
+							lat: position.coords.latitude,
+							lng: position.coords.longitude
+						};
+						locationPermissionState = 'granted';
+						routeStore.setRouteOnRoute(routeMeta.id, true, { coords: latestCoords });
+						updateDashboardUI();
+						syncLocationWatch();
+						setAlert(`${routeMeta.id} is now On-Route.`, 'success');
+					},
+					() => {
+						isTurningOnRoute = false;
+						routeStore.setRouteOnRoute(routeMeta.id, false);
+						updateDashboardUI();
+						setAlert('Location access is required before turning this bus On-Route.', 'error');
+					},
+					{
+						enableHighAccuracy: true,
+						maximumAge: 0,
+						timeout: 10000
+					}
+				);
+			}
+
+			function disableRoute() {
+				if (!routeMeta) {
+					return;
+				}
+
+				isTurningOnRoute = false;
+
+				routeStore.setRouteOnRoute(routeMeta.id, false);
+				updateDashboardUI();
+				syncLocationWatch();
+				setAlert(`${routeMeta.id} is now Off-Route.`, 'info');
+			}
+
+			function toggleRoute() {
+				if (!routeMeta) {
+					return;
+				}
+
+				if (isTurningOnRoute) {
+					return;
+				}
+
+				const runtime = routeStore.getDisplayState(routeMeta.id);
+				if (runtime.onRoute) {
+					requestRouteActivationConfirmation('off').then((confirmed) => {
+						if (!confirmed) {
+							return;
+						}
+
+						disableRoute();
+					});
+					return;
+				}
+
+				requestRouteActivationConfirmation('on').then((confirmed) => {
+					if (!confirmed) {
+						return;
+					}
+
+					enableRoute();
+				});
+			}
+
+			if (!routeStore || !routeMeta || !operatorSession || !operatorSession.busId || !operatorSession.busCode) {
+				renderMissingSession();
+			} else {
+				renderDashboardShell();
+				updateDashboardUI();
+				watchLocationPermission();
+				syncLocationWatch();
+
+				document.getElementById('dashboardActionButton').addEventListener('click', toggleRoute);
+
+				const routeActivationModalElements = getRouteActivationModalElements();
+				routeActivationModalElements.cancelButton.addEventListener('click', () => {
+					resolveRouteActivation(false);
+				});
+				routeActivationModalElements.confirmButton.addEventListener('click', () => {
+					resolveRouteActivation(true);
+				});
+				routeActivationModalElements.modal.addEventListener('click', (event) => {
+					if (event.target === routeActivationModalElements.modal) {
+						resolveRouteActivation(false);
+					}
+				});
+
+				document.getElementById('mapAmToggle').addEventListener('click', () => {
+					renderSelectedRouteMap('AM');
+				});
+
+				document.getElementById('mapPmToggle').addEventListener('click', () => {
+					renderSelectedRouteMap('PM');
+				});
+
+				routeStore.subscribe(() => {
+					updateDashboardUI();
+				});
+
+				window.addEventListener('focus', () => {
+					updateDashboardUI();
+				});
+
+				window.addEventListener('keydown', (event) => {
+					if (event.key === 'Escape' && routeActivationResolver) {
+						resolveRouteActivation(false);
+					}
+				});
+
+				window.addEventListener('beforeunload', () => {
+					resolveRouteActivation(false);
+					stopLocationWatch();
+				});
+			}
+		</script>
+	</body>
+</html>
